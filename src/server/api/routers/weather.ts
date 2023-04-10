@@ -66,10 +66,8 @@ const weatherDTO = (data: weather) => {
     pressure: data.main.pressure,
     humidity: data.main.humidity,
     wind: data.wind.speed,
-    coord: {
-      lon: data.coord.lon,
-      lat: data.coord.lat,
-    },
+    lon: data.coord.lon,
+    lat: data.coord.lat,
     iconImageURL: "",
   };
 
