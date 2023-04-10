@@ -75,7 +75,7 @@ const WeatherCard = (data: weatherData) => {
       </div>
       <div>
         {data?.iconImageURL && (
-          <div>
+          <>
             <p className="capitalize">{data?.description}</p>
             <Image
               src={data?.iconImageURL || "/"}
@@ -84,7 +84,7 @@ const WeatherCard = (data: weatherData) => {
               alt="weather icon"
               priority={true}
             />
-          </div>
+          </>
         )}
         <p>Pressure: {data?.pressure}</p>
         <p>Humidity: {data?.humidity}</p>
