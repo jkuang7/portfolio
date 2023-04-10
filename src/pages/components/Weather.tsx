@@ -62,7 +62,7 @@ interface weatherData {
 
 const WeatherCard = (data: weatherData) => {
   return (
-    <div className="border-black-500 mx-auto mt-4 inline-block grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
+    <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
       <div className="">
         <p>Lon: {data?.coord?.lon}</p>
         <p>Lat: {data?.coord?.lat}</p>
