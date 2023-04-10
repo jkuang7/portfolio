@@ -2,6 +2,27 @@ import { type NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import Weather from "~/pages/components/Weather";
+import {
+  SignIn,
+  SignInButton,
+  SignOutButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+  useUser,
+} from "@clerk/nextjs";
+
+const SignedInUser = () => {
+  const user = useUser();
+  return (
+    <div className="flex justify-end">
+      <div className="m-1 pr-4">
+        {!user.isSignedIn && <SignInButton />}
+        {!!user.isSignedIn && <SignOutButton />}
+      </div>
+    </div>
+  );
+};
 
 const Home: NextPage = () => {
   return (
@@ -12,6 +33,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="overflow-x-hidden whitespace-normal break-all">
+        <SignedInUser />
         <Weather />
       </main>
     </>
