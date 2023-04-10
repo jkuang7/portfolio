@@ -53,10 +53,8 @@ interface weatherData {
   pressure?: number;
   humidity?: number;
   wind?: number;
-  coord?: {
-    lon?: number;
-    lat?: number;
-  };
+  lon?: number;
+  lat?: number;
   iconImageURL?: string;
 }
 
@@ -64,8 +62,8 @@ const WeatherCard = (data: weatherData) => {
   return (
     <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
       <div className="">
-        <p>Lon: {data?.coord?.lon}</p>
-        <p>Lat: {data?.coord?.lat}</p>
+        <p>Lon: {data?.lon}</p>
+        <p>Lat: {data?.lat}</p>
         <br></br>
         <p>{data?.name}</p>
         <p>Temperature: {data?.temp}</p>
