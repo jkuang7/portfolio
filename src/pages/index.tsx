@@ -12,7 +12,7 @@ import {
   useUser,
 } from "@clerk/nextjs";
 
-const SignedInUser = () => {
+const UserIsSignedIn = () => {
   const user = useUser();
   return (
     <div className="flex justify-end">
@@ -33,7 +33,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="overflow-x-hidden whitespace-normal break-all">
-        <SignedInUser />
+        <UserIsSignedIn />
         <Weather />
       </main>
     </>
