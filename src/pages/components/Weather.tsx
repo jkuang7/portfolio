@@ -73,17 +73,19 @@ const WeatherCard = (data: weatherData) => {
         <p>Min: {data?.temp_min}</p>
         <p>Max: {data?.temp_max}</p>
       </div>
-
       <div>
-        <p className="capitalize">{data?.description}</p>
-        <Image
-          src={data?.iconImageURL || ""}
-          width={100}
-          height={100}
-          alt="weather icon"
-          priority={true}
-        />
-
+        {data?.iconImageURL && (
+          <div>
+            <p className="capitalize">{data?.description}</p>
+            <Image
+              src={data?.iconImageURL || "/"}
+              width={100}
+              height={100}
+              alt="weather icon"
+              priority={true}
+            />
+          </div>
+        )}
         <p>Pressure: {data?.pressure}</p>
         <p>Humidity: {data?.humidity}</p>
         <p>Wind: {data?.wind} Mph</p>
