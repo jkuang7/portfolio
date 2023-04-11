@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { NextApiRequest, NextApiResponse } from "next";
 import fetch from "node-fetch";
 import { PrismaClient } from "@prisma/client";
 
@@ -41,7 +41,10 @@ interface Weather {
   cod: number;
 }
 
-export async function handler(req: Request, res: Response): Promise<void> {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   const lat = "40.7375751";
   const lon = "-73.8788719";
   const dataResponse = await fetch(
@@ -59,9 +62,13 @@ export async function handler(req: Request, res: Response): Promise<void> {
         json: JSON.stringify(weatherData),
       },
     });
-    res.status(200).json(createdWeatherData);
+    res.status(200).json({ success: true, createdWeatherData });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 }
+
+// export async function handler(req: Request, res: Response): Promise<void> {
+
+// }
