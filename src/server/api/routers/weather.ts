@@ -103,9 +103,6 @@ export const weatherRouter = createTRPCRouter({
   }),
 
   getUserWeather: publicProcedure.query(async ({ ctx }) => {
-    // const weatherData = await ctx.prisma.weather.findFirst({
-    //   take: 100,
-    //   orderBy: [{ location: "asc" }],
-    // });
+    //get user's location
   }),
 });
