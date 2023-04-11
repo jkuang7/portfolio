@@ -56,12 +56,17 @@ interface weatherData {
   lon?: number;
   lat?: number;
   iconImageURL?: string;
+  updatedAt?: string;
 }
 
 const WeatherCard = (data: weatherData) => {
+  let dateString = data?.updatedAt || "";
+  dateString =
+    dateString.slice(0, dateString.toString().indexOf("GMT")) + " EST";
+
   return (
     <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
-      <div className="">
+      <div>
         <p>{data?.name}</p>
         <p>Lon: {data?.lon}</p>
         <p>Lat: {data?.lat}</p>
@@ -89,14 +94,15 @@ const WeatherCard = (data: weatherData) => {
         <p>Humidity: {data?.humidity}</p>
         <p>Wind: {data?.wind} Mph</p>
       </div>
+      <div className="col-span-2">
+        <p>{dateString}</p>
+      </div>
     </div>
   );
 };
 
 const Weather = () => {
   const { data } = api.weather.getWeather.useQuery();
-
-  console.log(data);
 
   const handleSearch = (searchText: string) => {
     console.log(`Looking up City: ${searchText}`);
