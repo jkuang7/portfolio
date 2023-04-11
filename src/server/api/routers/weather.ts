@@ -98,7 +98,7 @@ export const weatherRouter = createTRPCRouter({
 
     return weatherData.map((data) => {
       const res = data.json?.valueOf() as Weather;
-      return weatherDTO(res);
+      return { ...weatherDTO(res), updatedAt: data.updatedAt as Date };
     });
   }),
 

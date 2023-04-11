@@ -96,6 +96,8 @@ const WeatherCard = (data: weatherData) => {
 const Weather = () => {
   const { data } = api.weather.getWeather.useQuery();
 
+  console.log(data);
+
   const handleSearch = (searchText: string) => {
     console.log(`Looking up City: ${searchText}`);
   };
