@@ -68,7 +68,3 @@ export default async function handler(
     res.status(500).json({ error: "Something went wrong" });
   }
 }
-
-// export async function handler(req: Request, res: Response): Promise<void> {
-
-// }
