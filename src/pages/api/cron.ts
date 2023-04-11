@@ -9,6 +9,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (req.query.key !== "ZxNf82j") {
+    res.status(404).end();
+    return;
+  }
+
   const locations = [{ lat: "40.7376", lon: "-73.8789", loc: "North Beach" }];
 
   const responses = await Promise.all(
