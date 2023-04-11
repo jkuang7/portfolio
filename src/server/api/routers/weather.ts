@@ -2,36 +2,42 @@ import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
-const data = {
-  coord: { lon: -73.8802, lat: 40.7368 },
-  weather: [
-    { id: 803, main: "Clouds", description: "broken clouds", icon: "04d" },
-  ],
-  base: "stations",
+interface weather {
+  coord: {
+    lon: number;
+    lat: number;
+  };
+  weather: {
+    id: number;
+    main: string;
+    description: string;
+    icon: string;
+  }[];
+  base: string;
   main: {
-    temp: 283.71,
-    feels_like: 281.6,
-    temp_min: 281.42,
-    temp_max: 286.24,
-    pressure: 1031,
-    humidity: 30,
-  },
-  visibility: 10000,
-  wind: { speed: 2.57, deg: 0 },
-  clouds: { all: 75 },
-  dt: 1680983463,
+    temp: number;
+    feels_like: number;
+    temp_min: number;
+    temp_max: number;
+    pressure: number;
+    humidity: number;
+  };
+  visibility: number;
+  wind: { speed: number; deg: number };
+  cloud: { all: number };
+  dt: number;
   sys: {
-    type: 2,
-    id: 2002197,
-    country: "US",
-    sunrise: 1680949674,
-    sunset: 1680996392,
-  },
-  timezone: -14400,
-  id: 5128920,
-  name: "North Beach",
-  cod: 200,
-};
+    type: number;
+    id: number;
+    country: string;
+    sunrise: number;
+    sunset: number;
+  };
+  timezone: number;
+  id: number;
+  name: string;
+  cod: number;
+}
 
 const weatherIconMap: { [key: string]: string } = {
   "01d": "https://openweathermap.org/img/wn/01d@2x.png",
@@ -53,25 +59,23 @@ const convertKelvinToFahrenheit = (kelvin: number | undefined) => {
   return Math.round(((kelvin - 273.15) * 9) / 5 + 32);
 };
 
-type weather = typeof data;
-
 const weatherDTO = (data: weather) => {
   const weatherData = {
-    name: data.name,
-    description: data.weather[0]?.description,
-    temp: convertKelvinToFahrenheit(data.main.temp),
-    feels_like: convertKelvinToFahrenheit(data.main.feels_like),
-    temp_min: convertKelvinToFahrenheit(data.main.temp_min),
-    temp_max: convertKelvinToFahrenheit(data.main.temp_max),
-    pressure: data.main.pressure,
-    humidity: data.main.humidity,
-    wind: data.wind.speed,
-    lon: data.coord.lon,
-    lat: data.coord.lat,
+    name: data?.name,
+    description: data?.weather[0]?.description,
+    temp: convertKelvinToFahrenheit(data?.main?.temp),
+    feels_like: convertKelvinToFahrenheit(data?.main?.feels_like),
+    temp_min: convertKelvinToFahrenheit(data?.main?.temp_min),
+    temp_max: convertKelvinToFahrenheit(data?.main?.temp_max),
+    pressure: data?.main?.pressure,
+    humidity: data?.main?.humidity,
+    wind: data?.wind?.speed,
+    lon: data?.coord?.lon,
+    lat: data?.coord?.lat,
     iconImageURL: "",
   };
 
-  //updating iconLink in weatherData to the corresponding image link
+  //update iconImageURL in weatherData to the corresponding image link
   if (data.weather[0]?.icon) {
     const iconId = data.weather[0]?.icon;
     const iconImageURL = weatherIconMap[iconId];
@@ -83,18 +87,35 @@ const weatherDTO = (data: weather) => {
 
 //routers
 export const weatherRouter = createTRPCRouter({
-  getWeather: publicProcedure.input(z.object({})).query(({ input }) => {
-    // const res = await fetch(
-    //   `https://api.openweathermap.org/data/2.5/weather?lat=40.7375751&lon=-73.8788719&appid=081a314e861f49868f503b1ce665590b`
-    // );
+  // getWeather: publicProcedure.input(z.object({})).query(({ input }) => {
+  //   // const res = await fetch(
+  //   //   `https://api.openweathermap.org/data/2.5/weather?lat=40.7375751&lon=-73.8788719&appid=081a314e861f49868f503b1ce665590b`
+  //   // );
 
-    // const data = res.json();
-    // return data;
+  //   // const data = res.json();
+  //   // return data;
 
-    return weatherDTO(data);
+  //   return weatherDTO(data);
+  // }),
+  getWeather: publicProcedure.query(async ({ ctx }) => {
+    const weatherData = await ctx.prisma.weather.findMany({
+      take: 100,
+      where: {
+        showOnMainPage: true,
+      },
+      orderBy: [{ location: "asc" }],
+    });
+
+    return weatherData.map((data) => {
+      const res = data.json?.valueOf() as weather;
+      return weatherDTO(res);
+    });
   }),
 
-  getAll: publicProcedure.query(({ ctx }) => {
-    return ctx.prisma.weather.findMany();
+  getUserWeather: publicProcedure.query(async ({ ctx }) => {
+    // const weatherData = await ctx.prisma.weather.findFirst({
+    //   take: 100,
+    //   orderBy: [{ location: "asc" }],
+    // });
   }),
 });
