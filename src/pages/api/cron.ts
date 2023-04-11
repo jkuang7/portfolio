@@ -26,9 +26,9 @@ export default async function handler(
         json: weatherData,
       },
     });
+    console.log("Testing");
 
     res.status(200).json({ success: true, createdWeatherData });
-    res.status(200).end("Hello Cron!");
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
