@@ -15,23 +15,31 @@ export default async function handler(
     locations.map(async (loc) => {
       const lat = loc.lat;
       const lon = loc.lon;
-      const coord = `${lat},${lon}`;
       const response = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=081a314e861f49868f503b1ce665590b`
       );
-      return [coord, (await response.json()) as Prisma.JsonObject];
+      return [loc, (await response.json()) as Prisma.JsonObject];
     })
   );
 
   responses.map(async (weatherData) => {
     try {
-      const coord = weatherData[0] as string;
-      await prisma.weather.update({
+      const lat = weatherData[0]?.lat as string;
+      const lon = weatherData[0]?.lon as string;
+      const coord = `${lat},${lon}`;
+
+      await prisma.weather.upsert({
         where: {
           latLon: coord,
         },
-        data: {
+        update: {
           json: weatherData[1] as Prisma.JsonObject,
+        },
+        create: {
+          latLon: coord,
+          json: weatherData[1] as Prisma.JsonObject,
+          showOnMainPage: true,
+          location: weatherData[0]?.loc as string,
         },
       });
     } catch (error) {
