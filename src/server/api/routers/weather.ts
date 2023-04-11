@@ -87,16 +87,6 @@ const weatherDTO = (data: weather) => {
 
 //routers
 export const weatherRouter = createTRPCRouter({
-  // getWeather: publicProcedure.input(z.object({})).query(({ input }) => {
-  //   // const res = await fetch(
-  //   //   `https://api.openweathermap.org/data/2.5/weather?lat=40.7375751&lon=-73.8788719&appid=081a314e861f49868f503b1ce665590b`
-  //   // );
-
-  //   // const data = res.json();
-  //   // return data;
-
-  //   return weatherDTO(data);
-  // }),
   getWeather: publicProcedure.query(async ({ ctx }) => {
     const weatherData = await ctx.prisma.weather.findMany({
       take: 100,
