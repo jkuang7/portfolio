@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
-interface weather {
+interface Weather {
   coord: {
     lon: number;
     lat: number;
@@ -59,7 +59,7 @@ const convertKelvinToFahrenheit = (kelvin: number | undefined) => {
   return Math.round(((kelvin - 273.15) * 9) / 5 + 32);
 };
 
-const weatherDTO = (data: weather) => {
+const weatherDTO = (data: Weather) => {
   const weatherData = {
     name: data?.name,
     description: data?.weather[0]?.description,
@@ -97,7 +97,7 @@ export const weatherRouter = createTRPCRouter({
     });
 
     return weatherData.map((data) => {
-      const res = data.json?.valueOf() as weather;
+      const res = data.json?.valueOf() as Weather;
       return weatherDTO(res);
     });
   }),

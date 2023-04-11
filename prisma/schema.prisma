@@ -12,11 +12,9 @@ datasource db {
 }
 
 model Weather {
-    id        String   @id @default(cuid())
-    authorId  String
-    location     String   @db.VarChar(255)
-    json Json
-    showOnMainPage Boolean
-    createdAt DateTime @default(now())
-    @@index([authorId])
+  latLon        String   @db.VarChar(255) @id
+  json           Json
+  showOnMainPage Boolean
+  location       String   @db.VarChar(255)
+  createdAt      DateTime @default(now())
 }
