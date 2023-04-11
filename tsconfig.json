@@ -28,7 +28,7 @@
     "**/*.tsx",
     "**/*.cjs",
     "**/*.mjs",
-    "src/pages/api/cron.js"
+    "src/pages/api/cron.ts"
   ],
   "exclude": ["node_modules"]
 }
