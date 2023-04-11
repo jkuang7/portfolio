@@ -56,16 +56,22 @@ interface weatherData {
   lon?: number;
   lat?: number;
   iconImageURL?: string;
+  updatedAt?: string;
 }
 
 const WeatherCard = (data: weatherData) => {
+  let dateString = data?.updatedAt || "";
+  dateString =
+    dateString.slice(0, dateString.toString().indexOf("GMT")) + " EST";
+
   return (
     <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
-      <div className="">
+      <div>
+        <p>{data?.name}</p>
         <p>Lon: {data?.lon}</p>
         <p>Lat: {data?.lat}</p>
         <br></br>
-        <p>{data?.name}</p>
+
         <p>Temperature: {data?.temp}</p>
         <p>Feels Like: {data?.feels_like}</p>
         <p>Min: {data?.temp_min}</p>
@@ -88,22 +94,22 @@ const WeatherCard = (data: weatherData) => {
         <p>Humidity: {data?.humidity}</p>
         <p>Wind: {data?.wind} Mph</p>
       </div>
+      <div className="col-span-2">
+        <p>{dateString}</p>
+      </div>
     </div>
   );
 };
 
 const Weather = () => {
-  const { data } = api.weather.getWeather.useQuery({});
+  const { data } = api.weather.getWeather.useQuery();
+
   const handleSearch = (searchText: string) => {
     console.log(`Looking up City: ${searchText}`);
   };
 
   return (
     <>
-      <div className="mt-8 flex items-center justify-center">
-        <SearchBox onSearch={handleSearch} placeholder="Search for a city" />
-      </div>
-      <WeatherCard {...data} />
       <div className="m-1 mt-5 flex  items-center justify-center">
         <SearchBox
           onSearch={handleSearch}
@@ -111,6 +117,12 @@ const Weather = () => {
           buttonName="Add Weather To Daily Calendar"
         />
       </div>
+      <div className="mt-2 flex items-center justify-center">
+        <SearchBox onSearch={handleSearch} placeholder="Search for a city" />
+      </div>
+      {data?.map((weatherData) => {
+        return <WeatherCard key={weatherData.name} {...weatherData} />;
+      })}
     </>
   );
 };
