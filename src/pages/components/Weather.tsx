@@ -60,18 +60,29 @@ interface weatherData {
 }
 
 const WeatherCard = (data: weatherData) => {
-  let dateString = data?.updatedAt || "";
-  dateString =
-    dateString.slice(0, dateString.toString().indexOf("GMT")) + " EST";
+  const utcDate = new Date(data?.updatedAt || "");
+  const estDate = new Date(
+    utcDate.toLocaleString("en-US", { timeZone: "America/New_York" })
+  );
+
+  const dateString =
+    estDate.toLocaleString("en-US", {
+      timeZone: "America/New_York",
+      hour12: true,
+      hour: "numeric",
+      minute: "numeric",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }) + " EST";
 
   return (
     <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
       <div>
         <p>{data?.name}</p>
-        <p>Lon: {data?.lon}</p>
         <p>Lat: {data?.lat}</p>
+        <p>Lon: {data?.lon}</p>
         <br></br>
-
         <p>Temperature: {data?.temp}</p>
         <p>Feels Like: {data?.feels_like}</p>
         <p>Min: {data?.temp_min}</p>
