@@ -65,8 +65,6 @@ const WeatherCard = (data: weatherData) => {
     utcDate.toLocaleString("en-US", { timeZone: "America/New_York" })
   );
 
-  //datestring with no seconds, EST, 12 hours, New York
-
   const dateString =
     estDate.toLocaleString("en-US", {
       timeZone: "America/New_York",
@@ -77,8 +75,6 @@ const WeatherCard = (data: weatherData) => {
       month: "long",
       day: "numeric",
     }) + " EST";
-
-    
 
   return (
     <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
