@@ -68,10 +68,9 @@ const WeatherCard = (data: weatherData) => {
     <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
       <div>
         <p>{data?.name}</p>
-        <p>Lon: {data?.lon}</p>
         <p>Lat: {data?.lat}</p>
+        <p>Lon: {data?.lon}</p>
         <br></br>
-
         <p>Temperature: {data?.temp}</p>
         <p>Feels Like: {data?.feels_like}</p>
         <p>Min: {data?.temp_min}</p>
