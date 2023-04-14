@@ -132,18 +132,6 @@ const WeatherUserPage = () => {
     userId: userId,
   });
 
-  return (
-    <>
-      {data?.map((weatherData) => {
-        return <WeatherCard key={weatherData.name} {...weatherData} />;
-      })}
-    </>
-  );
-};
-
-const WeatherPage = () => {
-  const user = useUser();
-
   const handleSearch = (searchText: string) => {
     console.log(`Looking up: ${searchText}`);
   };
@@ -160,6 +148,18 @@ const WeatherPage = () => {
       <div className="m-1 mt-2 flex items-center justify-center">
         <SearchBox onSearch={handleSearch} placeholder="Search for a city" />
       </div>
+      {data?.map((weatherData) => {
+        return <WeatherCard key={weatherData.name} {...weatherData} />;
+      })}
+    </>
+  );
+};
+
+const WeatherPage = () => {
+  const user = useUser();
+  return (
+    <>
+      <p>Login to add your own locations</p>
       {user.isSignedIn ? <WeatherUserPage /> : <WeatherMainPage />}
     </>
   );
