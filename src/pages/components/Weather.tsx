@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { api } from "~/utils/api";
 import React, { useState } from "react";
+import { useUser } from "@clerk/nextjs";
 
 interface SearchBoxProps {
   placeholder: string;
@@ -113,7 +114,8 @@ const WeatherCard = (data: weatherData) => {
 };
 
 const Weather = () => {
-  const { data } = api.weather.getWeather.useQuery();
+  const { data } = api.weather.getWeatherForMainPage.useQuery();
+  const { user } = useUser();
 
   const handleSearch = (searchText: string) => {
     console.log(`Looking up City: ${searchText}`);

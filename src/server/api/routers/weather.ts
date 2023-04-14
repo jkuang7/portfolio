@@ -96,7 +96,7 @@ const weatherDTO = (data: Weather) => {
 
 //routers
 export const weatherRouter = createTRPCRouter({
-  getWeather: publicProcedure.query(async ({ ctx }) => {
+  getWeatherForMainPage: publicProcedure.query(async ({ ctx }) => {
     const weatherData = await ctx.prisma.weather.findMany({
       take: 100,
       where: {
