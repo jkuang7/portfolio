@@ -9,7 +9,13 @@ const UserIsSignedIn = () => {
   return (
     <div className="flex justify-end">
       <div className="m-1 pr-4">
-        {!user.isSignedIn && <SignInButton />}
+        {!user.isSignedIn && (
+          <SignInButton>
+            <button className="rounded bg-blue-500 px-3 py-1 font-bold text-white hover:bg-blue-700">
+              Login to Add Locations
+            </button>
+          </SignInButton>
+        )}
         {!!user.isSignedIn && <SignOutButton />}
       </div>
     </div>

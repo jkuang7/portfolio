@@ -157,12 +157,7 @@ const WeatherUserPage = () => {
 
 const WeatherPage = () => {
   const user = useUser();
-  return (
-    <>
-      <p>Login to add your own locations</p>
-      {user.isSignedIn ? <WeatherUserPage /> : <WeatherMainPage />}
-    </>
-  );
+  return <>{user.isSignedIn ? <WeatherUserPage /> : <WeatherMainPage />}</>;
 };
 
 export default WeatherPage;
