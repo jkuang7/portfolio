@@ -1,16 +1,8 @@
 import { type NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
-import Weather from "~/pages/components/Weather";
-import {
-  SignIn,
-  SignInButton,
-  SignOutButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-  useUser,
-} from "@clerk/nextjs";
+import WeatherPage from "~/pages/components/Weather";
+import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
 
 const UserIsSignedIn = () => {
   const user = useUser();
@@ -34,7 +26,7 @@ const Home: NextPage = () => {
       </Head>
       <main className="overflow-x-hidden whitespace-normal break-all">
         <UserIsSignedIn />
-        <Weather />
+        <WeatherPage />
       </main>
     </>
   );

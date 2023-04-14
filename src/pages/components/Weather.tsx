@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { api } from "~/utils/api";
 import React, { useState } from "react";
+import { useUser, useAuth } from "@clerk/nextjs";
 
 interface SearchBoxProps {
   placeholder: string;
@@ -45,6 +46,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({
 
 interface weatherData {
   name?: string;
+  location?: string;
   description?: string;
   temp?: number;
   feels_like?: number;
@@ -56,7 +58,7 @@ interface weatherData {
   lon?: number;
   lat?: number;
   iconImageURL?: string;
-  updatedAt?: string;
+  updatedAt?: Date;
 }
 
 const WeatherCard = (data: weatherData) => {
@@ -79,7 +81,7 @@ const WeatherCard = (data: weatherData) => {
   return (
     <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
       <div>
-        <p>{data?.name}</p>
+        <p>{data?.location}</p>
         <p>Lat: {data?.lat}</p>
         <p>Lon: {data?.lon}</p>
         <br></br>
@@ -112,11 +114,38 @@ const WeatherCard = (data: weatherData) => {
   );
 };
 
-const Weather = () => {
-  const { data } = api.weather.getWeather.useQuery();
+const WeatherMainPage = () => {
+  const { data } = api.weather.getWeatherForMainPage.useQuery();
+
+  return (
+    <>
+      {data?.map((weatherData) => {
+        return <WeatherCard key={weatherData.name} {...weatherData} />;
+      })}
+    </>
+  );
+};
+
+const WeatherUserPage = () => {
+  const { userId } = useAuth() as { userId: string };
+  const { data } = api.weather.getWeatherForUserPage.useQuery({
+    userId: userId,
+  });
+
+  return (
+    <>
+      {data?.map((weatherData) => {
+        return <WeatherCard key={weatherData.name} {...weatherData} />;
+      })}
+    </>
+  );
+};
+
+const WeatherPage = () => {
+  const user = useUser();
 
   const handleSearch = (searchText: string) => {
-    console.log(`Looking up City: ${searchText}`);
+    console.log(`Looking up: ${searchText}`);
   };
 
   return (
@@ -128,14 +157,12 @@ const Weather = () => {
           buttonName="Add Weather To Daily Calendar"
         />
       </div>
-      <div className="mt-2 flex items-center justify-center">
+      <div className="m-1 mt-2 flex items-center justify-center">
         <SearchBox onSearch={handleSearch} placeholder="Search for a city" />
       </div>
-      {data?.map((weatherData) => {
-        return <WeatherCard key={weatherData.name} {...weatherData} />;
-      })}
+      {user.isSignedIn ? <WeatherUserPage /> : <WeatherMainPage />}
     </>
   );
 };
 
-export default Weather;
+export default WeatherPage;

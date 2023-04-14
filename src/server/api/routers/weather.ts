@@ -2,7 +2,9 @@ import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
-interface Weather {
+import type { Weather } from "@prisma/client";
+
+interface weatherInput {
   coord: {
     lon: number;
     lat: number;
@@ -68,9 +70,12 @@ const convertKelvinToFahrenheit = (kelvin: number | undefined) => {
   return Math.round(((kelvin - 273.15) * 9) / 5 + 32);
 };
 
-const weatherDTO = (data: Weather) => {
+const weatherDTO = (weather: Weather) => {
+  const data = weather.json?.valueOf() as weatherInput;
+
   const weatherData = {
     name: data?.name,
+    location: weather.location,
     description: data?.weather[0]?.description,
     temp: convertKelvinToFahrenheit(data?.main?.temp),
     feels_like: convertKelvinToFahrenheit(data?.main?.feels_like),
@@ -82,6 +87,7 @@ const weatherDTO = (data: Weather) => {
     lon: data?.coord?.lon,
     lat: data?.coord?.lat,
     iconImageURL: "",
+    updatedAt: weather.updatedAt,
   };
 
   //update iconImageURL in weatherData to the corresponding image link
@@ -96,7 +102,7 @@ const weatherDTO = (data: Weather) => {
 
 //routers
 export const weatherRouter = createTRPCRouter({
-  getWeather: publicProcedure.query(async ({ ctx }) => {
+  getWeatherForMainPage: publicProcedure.query(async ({ ctx }) => {
     const weatherData = await ctx.prisma.weather.findMany({
       take: 100,
       where: {
@@ -105,13 +111,27 @@ export const weatherRouter = createTRPCRouter({
       orderBy: [{ location: "asc" }],
     });
 
-    return weatherData.map((data) => {
-      const res = data.json?.valueOf() as Weather;
-      return { ...weatherDTO(res), updatedAt: data.updatedAt.toString() };
-    });
+    return weatherData.map((data) => weatherDTO(data));
   }),
 
-  getUserWeather: publicProcedure.query(async ({ ctx }) => {
-    //get user's location
-  }),
+  getWeatherForUserPage: publicProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const userWeathers = await ctx.prisma.userWeather.findMany({
+        where: {
+          userId: input.userId,
+        },
+        take: 100,
+      });
+
+      const weathers = await ctx.prisma.weather.findMany({
+        where: {
+          latLon: {
+            in: userWeathers.map((uw) => uw.latLon),
+          },
+        },
+      });
+
+      return weathers.map((data) => weatherDTO(data));
+    }),
 });
