@@ -16,7 +16,13 @@ const UserIsSignedIn = () => {
             </button>
           </SignInButton>
         )}
-        {!!user.isSignedIn && <SignOutButton />}
+        {!!user.isSignedIn && (
+          <SignOutButton>
+            <button className="rounded bg-blue-500 px-3 py-1 font-bold text-white hover:bg-blue-700">
+              Sign Out
+            </button>
+          </SignOutButton>
+        )}
       </div>
     </div>
   );
