@@ -15,4 +15,24 @@ model Weather {
   location       String   @db.VarChar(255)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  userWeathers   UserWeather[]
+}
+
+model User {
+  id           String        @id @default(uuid())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  userWeathers UserWeather[]
+}
+
+model UserWeather {
+  id        String      @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  weather   Weather  @relation(fields: [latLon], references: [latLon])
+  userId    String
+  latLon    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, latLon])
 }
