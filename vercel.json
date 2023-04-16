@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron?key=ZxNf82j",
-      "schedule": "0 4 * * *"
+      "schedule": "13 3 * * *"
     }
   ]
 }
