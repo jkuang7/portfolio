@@ -124,7 +124,7 @@ const WeatherMainPage = () => {
           return <WeatherCard key={weatherData.name} {...weatherData} />
         })
       ) : (
-        <p>Loading...</p>
+        <p className="flex h-screen items-center justify-center">Loading...</p>
       )}
     </>
   )
@@ -157,7 +157,7 @@ const WeatherUserPage = () => {
           return <WeatherCard key={weatherData.name} {...weatherData} />
         })
       ) : (
-        <p>Loading...</p>
+        <p className="flex h-screen items-center justify-center">Loading...</p>
       )}
     </>
   )
