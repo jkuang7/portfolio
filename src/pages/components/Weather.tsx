@@ -1,12 +1,12 @@
-import Image from "next/image";
-import { api } from "~/utils/api";
-import React, { useState } from "react";
-import { useUser, useAuth } from "@clerk/nextjs";
+import Image from "next/image"
+import { api } from "~/utils/api"
+import React, { useState } from "react"
+import { useUser, useAuth } from "@clerk/nextjs"
 
 interface SearchBoxProps {
-  placeholder: string;
-  onSearch: (query: string) => void;
-  buttonName?: string;
+  placeholder: string
+  onSearch: (query: string) => void
+  buttonName?: string
 }
 
 const SearchBox: React.FC<SearchBoxProps> = ({
@@ -14,16 +14,16 @@ const SearchBox: React.FC<SearchBoxProps> = ({
   onSearch,
   buttonName = "Search",
 }) => {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState("")
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    onSearch(query);
-  };
+    event.preventDefault()
+    onSearch(query)
+  }
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(event.target.value);
-  };
+    setQuery(event.target.value)
+  }
 
   return (
     <form onSubmit={handleSearch} className="flex items-center">
@@ -41,31 +41,31 @@ const SearchBox: React.FC<SearchBoxProps> = ({
         {buttonName}
       </button>
     </form>
-  );
-};
+  )
+}
 
 interface weatherData {
-  name?: string;
-  location?: string;
-  description?: string;
-  temp?: number;
-  feels_like?: number;
-  temp_min?: number;
-  temp_max?: number;
-  pressure?: number;
-  humidity?: number;
-  wind?: number;
-  lon?: number;
-  lat?: number;
-  iconImageURL?: string;
-  updatedAt?: Date;
+  name?: string
+  location?: string
+  description?: string
+  temp?: number
+  feels_like?: number
+  temp_min?: number
+  temp_max?: number
+  pressure?: number
+  humidity?: number
+  wind?: number
+  lon?: number
+  lat?: number
+  iconImageURL?: string
+  updatedAt?: Date
 }
 
 const WeatherCard = (data: weatherData) => {
-  const utcDate = new Date(data?.updatedAt || "");
+  const utcDate = new Date(data?.updatedAt || "")
   const estDate = new Date(
     utcDate.toLocaleString("en-US", { timeZone: "America/New_York" })
-  );
+  )
 
   const dateString =
     estDate.toLocaleString("en-US", {
@@ -76,7 +76,7 @@ const WeatherCard = (data: weatherData) => {
       year: "numeric",
       month: "long",
       day: "numeric",
-    }) + " EST";
+    }) + " EST"
 
   return (
     <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
@@ -111,34 +111,34 @@ const WeatherCard = (data: weatherData) => {
         <p>{dateString}</p>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const WeatherMainPage = () => {
-  const { data } = api.weather.getWeatherForMainPage.useQuery();
+  const { data } = api.weather.getWeatherForMainPage.useQuery()
 
   return (
     <>
       {data?.length ? (
         data?.map((weatherData) => {
-          return <WeatherCard key={weatherData.name} {...weatherData} />;
+          return <WeatherCard key={weatherData.name} {...weatherData} />
         })
       ) : (
         <p>Loading...</p>
       )}
     </>
-  );
-};
+  )
+}
 
 const WeatherUserPage = () => {
-  const { userId } = useAuth() as { userId: string };
+  const { userId } = useAuth() as { userId: string }
   const { data } = api.weather.getWeatherForUserPage.useQuery({
     userId: userId,
-  });
+  })
 
   const handleSearch = (searchText: string) => {
-    console.log(`Looking up: ${searchText}`);
-  };
+    console.log(`Looking up: ${searchText}`)
+  }
 
   return (
     <>
@@ -154,18 +154,18 @@ const WeatherUserPage = () => {
       </div>
       {data?.length ? (
         data?.map((weatherData) => {
-          return <WeatherCard key={weatherData.name} {...weatherData} />;
+          return <WeatherCard key={weatherData.name} {...weatherData} />
         })
       ) : (
         <p>Loading...</p>
       )}
     </>
-  );
-};
+  )
+}
 
 const WeatherPage = () => {
-  const user = useUser();
-  return <>{user.isSignedIn ? <WeatherUserPage /> : <WeatherMainPage />}</>;
-};
+  const user = useUser()
+  return <>{user.isSignedIn ? <WeatherUserPage /> : <WeatherMainPage />}</>
+}
 
-export default WeatherPage;
+export default WeatherPage
