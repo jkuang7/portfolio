@@ -119,9 +119,13 @@ const WeatherMainPage = () => {
 
   return (
     <>
-      {data?.map((weatherData) => {
-        return <WeatherCard key={weatherData.name} {...weatherData} />;
-      })}
+      {data?.length ? (
+        data?.map((weatherData) => {
+          return <WeatherCard key={weatherData.name} {...weatherData} />;
+        })
+      ) : (
+        <p>Loading...</p>
+      )}
     </>
   );
 };
@@ -148,9 +152,13 @@ const WeatherUserPage = () => {
       <div className="m-1 mt-2 flex items-center justify-center">
         <SearchBox onSearch={handleSearch} placeholder="Search for a city" />
       </div>
-      {data?.map((weatherData) => {
-        return <WeatherCard key={weatherData.name} {...weatherData} />;
-      })}
+      {data?.length ? (
+        data?.map((weatherData) => {
+          return <WeatherCard key={weatherData.name} {...weatherData} />;
+        })
+      ) : (
+        <p>Loading...</p>
+      )}
     </>
   );
 };
