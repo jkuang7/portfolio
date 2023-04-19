@@ -114,28 +114,21 @@ const WeatherCard = (data: weatherData) => {
   )
 }
 
-const WeatherMainPage = () => {
-  const { data } = api.weather.getWeatherForMainPage.useQuery()
+interface WeatherProps {
+  data: weatherData[]
+}
 
+const MainPageWeather: React.FC<WeatherProps> = ({ data }) => {
   return (
     <>
-      {data?.length ? (
-        data?.map((weatherData) => {
-          return <WeatherCard key={weatherData.name} {...weatherData} />
-        })
-      ) : (
-        <p className="flex h-screen items-center justify-center">Loading...</p>
-      )}
+      {data?.map((weatherData) => {
+        return <WeatherCard key={weatherData.name} {...weatherData} />
+      })}
     </>
   )
 }
 
-const WeatherUserPage = () => {
-  const { userId } = useAuth() as { userId: string }
-  const { data } = api.weather.getWeatherForUserPage.useQuery({
-    userId: userId,
-  })
-
+const UserPageWeather: React.FC<WeatherProps> = ({ data }) => {
   const handleSearch = (searchText: string) => {
     console.log(`Looking up: ${searchText}`)
   }
@@ -152,20 +145,37 @@ const WeatherUserPage = () => {
       <div className="m-1 mt-2 flex items-center justify-center">
         <SearchBox onSearch={handleSearch} placeholder="Search for a city" />
       </div>
-      {data?.length ? (
-        data?.map((weatherData) => {
-          return <WeatherCard key={weatherData.name} {...weatherData} />
-        })
-      ) : (
-        <p className="flex h-screen items-center justify-center">Loading...</p>
-      )}
+      {data?.map((weatherData) => {
+        return <WeatherCard key={weatherData.name} {...weatherData} />
+      })}
     </>
   )
 }
 
 const WeatherPage = () => {
   const user = useUser()
-  return <>{user.isSignedIn ? <WeatherUserPage /> : <WeatherMainPage />}</>
+  const { userId } = useAuth() as { userId: string }
+
+  const { data } = user.isSignedIn
+    ? (api.weather.getWeatherForUserPage.useQuery({
+        userId: userId,
+      }) as { data: weatherData[] })
+    : (api.weather.getWeatherForMainPage.useQuery() as { data: weatherData[] })
+
+  if (data) {
+    const WeatherCards = !user.isSignedIn ? (
+      <MainPageWeather data={data} />
+    ) : (
+      <UserPageWeather data={data} />
+    )
+    return <>{WeatherCards}</>
+  }
+
+  const Loading = (
+    <p className="flex h-screen items-center justify-center">Loading...</p>
+  )
+
+  return <>{!data && Loading}</>
 }
 
 export default WeatherPage
