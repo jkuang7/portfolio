@@ -44,7 +44,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({
   )
 }
 
-interface weatherData {
+interface Weather {
   name?: string
   location?: string
   description?: string
@@ -61,7 +61,7 @@ interface weatherData {
   updatedAt?: Date
 }
 
-const WeatherCard = (data: weatherData) => {
+const WeatherCard: React.FC<Weather> = (data) => {
   const utcDate = new Date(data?.updatedAt || "")
   const estDate = new Date(
     utcDate.toLocaleString("en-US", { timeZone: "America/New_York" })
@@ -115,14 +115,14 @@ const WeatherCard = (data: weatherData) => {
 }
 
 interface WeatherProps {
-  data: weatherData[]
+  data: Weather[]
 }
 
 const MainPageWeather: React.FC<WeatherProps> = ({ data }) => {
   return (
     <>
-      {data?.map((weatherData) => {
-        return <WeatherCard key={weatherData.name} {...weatherData} />
+      {data?.map((weather) => {
+        return <WeatherCard key={weather.name} {...weather} />
       })}
     </>
   )
@@ -145,8 +145,8 @@ const UserPageWeather: React.FC<WeatherProps> = ({ data }) => {
       <div className="m-1 mt-2 flex items-center justify-center">
         <SearchBox onSearch={handleSearch} placeholder="Search for a city" />
       </div>
-      {data?.map((weatherData) => {
-        return <WeatherCard key={weatherData.name} {...weatherData} />
+      {data?.map((weather) => {
+        return <WeatherCard key={weather.name} {...weather} />
       })}
     </>
   )
@@ -159,8 +159,8 @@ const WeatherPage = () => {
   const { data } = user.isSignedIn
     ? (api.weather.getWeatherForUserPage.useQuery({
         userId: userId,
-      }) as { data: weatherData[] })
-    : (api.weather.getWeatherForMainPage.useQuery() as { data: weatherData[] })
+      }) as { data: Weather[] })
+    : (api.weather.getWeatherForMainPage.useQuery() as { data: Weather[] })
 
   if (!data)
     return (
