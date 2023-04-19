@@ -167,9 +167,11 @@ const WeatherPage = () => {
       <p className="flex h-screen items-center justify-center">Loading...</p>
     )
   } else {
-    return !user.isSignedIn
-      ? data && <MainPageWeather data={data} />
-      : data && <UserPageWeather data={data} />
+    return !user.isSignedIn ? (
+      <MainPageWeather data={data} />
+    ) : (
+      <UserPageWeather data={data} />
+    )
   }
 }
 
