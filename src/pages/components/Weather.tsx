@@ -157,10 +157,10 @@ const WeatherPage = () => {
   const { userId } = useAuth() as { userId: string }
 
   const { data } = user.isSignedIn
-    ? (api.weather.getWeatherForUserPage.useQuery({
+    ? api.weather.getWeatherForUserPage.useQuery({
         userId: userId,
-      }) as { data: Weather[] })
-    : (api.weather.getWeatherForMainPage.useQuery() as { data: Weather[] })
+      })
+    : api.weather.getWeatherForMainPage.useQuery()
 
   if (!data) {
     return (
