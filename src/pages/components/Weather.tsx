@@ -9,6 +9,27 @@ interface SearchBoxProps {
   buttonName?: string
 }
 
+interface Weather {
+  name?: string
+  location?: string
+  description?: string
+  temp?: number
+  feels_like?: number
+  temp_min?: number
+  temp_max?: number
+  pressure?: number
+  humidity?: number
+  wind?: number
+  lon?: number
+  lat?: number
+  iconImageURL?: string
+  updatedAt?: Date
+}
+
+interface WeatherProps {
+  data: Weather[]
+}
+
 const SearchBox: React.FC<SearchBoxProps> = ({
   placeholder,
   onSearch,
@@ -42,23 +63,6 @@ const SearchBox: React.FC<SearchBoxProps> = ({
       </button>
     </form>
   )
-}
-
-interface Weather {
-  name?: string
-  location?: string
-  description?: string
-  temp?: number
-  feels_like?: number
-  temp_min?: number
-  temp_max?: number
-  pressure?: number
-  humidity?: number
-  wind?: number
-  lon?: number
-  lat?: number
-  iconImageURL?: string
-  updatedAt?: Date
 }
 
 const WeatherCard: React.FC<Weather> = (data) => {
@@ -114,10 +118,6 @@ const WeatherCard: React.FC<Weather> = (data) => {
   )
 }
 
-interface WeatherProps {
-  data: Weather[]
-}
-
 const MainPageWeather: React.FC<WeatherProps> = ({ data }) => {
   return (
     <>
@@ -162,14 +162,15 @@ const WeatherPage = () => {
       }) as { data: Weather[] })
     : (api.weather.getWeatherForMainPage.useQuery() as { data: Weather[] })
 
-  if (!data)
+  if (!data) {
     return (
       <p className="flex h-screen items-center justify-center">Loading...</p>
     )
-
-  return !user.isSignedIn
-    ? data && <MainPageWeather data={data} />
-    : data && <UserPageWeather data={data} />
+  } else {
+    return !user.isSignedIn
+      ? data && <MainPageWeather data={data} />
+      : data && <UserPageWeather data={data} />
+  }
 }
 
 export default WeatherPage
