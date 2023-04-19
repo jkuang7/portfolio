@@ -162,20 +162,14 @@ const WeatherPage = () => {
       }) as { data: weatherData[] })
     : (api.weather.getWeatherForMainPage.useQuery() as { data: weatherData[] })
 
-  if (data) {
-    const WeatherCards = !user.isSignedIn ? (
-      <MainPageWeather data={data} />
-    ) : (
-      <UserPageWeather data={data} />
+  if (!data)
+    return (
+      <p className="flex h-screen items-center justify-center">Loading...</p>
     )
-    return <>{WeatherCards}</>
-  }
 
-  const Loading = (
-    <p className="flex h-screen items-center justify-center">Loading...</p>
-  )
-
-  return <>{!data && Loading}</>
+  return !user.isSignedIn
+    ? data && <MainPageWeather data={data} />
+    : data && <UserPageWeather data={data} />
 }
 
 export default WeatherPage
