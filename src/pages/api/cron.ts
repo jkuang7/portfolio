@@ -1,28 +1,30 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import fetch from "node-fetch";
-import { PrismaClient } from "@prisma/client";
-import type { Prisma } from "@prisma/client";
+import type { NextApiRequest, NextApiResponse } from "next"
+import fetch from "node-fetch"
+import { PrismaClient } from "@prisma/client"
+import type { Prisma } from "@prisma/client"
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
+
+const WEATHER_KEY = process.env.WEATHER_KEY as string
 
 const seed = async () => {
-  const locations = [{ lat: "40.7376", lon: "-73.8789", loc: "North Beach" }];
+  const locations = [{ lat: "40.7376", lon: "-73.8789", loc: "North Beach" }]
 
   const responses = await Promise.all(
     locations.map(async (loc) => {
-      const lat = loc.lat;
-      const lon = loc.lon;
+      const lat = loc.lat
+      const lon = loc.lon
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=081a314e861f49868f503b1ce665590b`
-      );
-      return [loc, (await response.json()) as Prisma.JsonObject];
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_KEY}`
+      )
+      return [loc, (await response.json()) as Prisma.JsonObject]
     })
-  );
+  )
 
   responses.map(async (weatherData) => {
-    const lat = weatherData[0]?.lat as string;
-    const lon = weatherData[0]?.lon as string;
-    const coord = `${lat},${lon}`;
+    const lat = weatherData[0]?.lat as string
+    const lon = weatherData[0]?.lon as string
+    const coord = `${lat},${lon}`
 
     await prisma.weather.upsert({
       where: {
@@ -37,30 +39,28 @@ const seed = async () => {
         showOnMainPage: true,
         location: weatherData[0]?.loc as string,
       },
-    });
-  });
-};
+    })
+  })
+}
 
 const updateWeatherEntries = async () => {
-  const weatherData = await prisma.weather.findMany({
-    orderBy: [{ latLon: "asc" }],
-  });
+  const weatherData = await prisma.weather.findMany({})
 
   const responses = await Promise.all(
     weatherData.map(async (data) => {
-      const latLon = data.latLon;
-      const [lat, lon] = latLon.split(",") as [string, string];
+      const latLon = data.latLon
+      const [lat, lon] = latLon.split(",") as [string, string]
 
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=081a314e861f49868f503b1ce665590b`
-      );
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_KEY}`
+      )
 
-      return [latLon, (await response.json()) as Prisma.JsonObject];
+      return [latLon, (await response.json()) as Prisma.JsonObject]
     })
-  );
+  )
 
   responses.map(async (weatherData) => {
-    const latLon = weatherData[0] as string;
+    const latLon = weatherData[0] as string
 
     await prisma.weather.update({
       where: {
@@ -69,36 +69,36 @@ const updateWeatherEntries = async () => {
       data: {
         json: weatherData[1] as Prisma.JsonObject,
       },
-    });
-  });
-};
+    })
+  })
+}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.query.key !== "ZxNf82j") {
-    res.status(404).end();
-    return;
+    res.status(404).end()
+    return
   }
 
   try {
-    await updateWeatherEntries();
-
     const mainPageisEmpty =
       (await prisma.weather.findFirst({
         where: {
           showOnMainPage: true,
         },
-      })) == undefined;
+      })) == undefined
 
     if (mainPageisEmpty) {
-      await seed();
+      await seed()
     }
+
+    await updateWeatherEntries()
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Something went wrong" });
+    console.error(error)
+    res.status(500).json({ error: "Something went wrong" })
   }
 
-  res.status(200).json({ message: "success" });
+  res.status(200).json({ message: "success" })
 }
