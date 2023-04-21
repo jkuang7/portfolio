@@ -8,7 +8,7 @@ const prisma = new PrismaClient()
 const WEATHER_KEY = process.env.WEATHER_KEY as string
 
 const seed = async () => {
-  const locations = [{ lat: "40.7376", lon: "-73.8789", loc: "North Beach" }]
+  const locations = [{ lat: "40.7376", lon: "-73.8789", name: "New York" }]
 
   const responses = await Promise.all(
     locations.map(async (loc) => {
@@ -37,14 +37,14 @@ const seed = async () => {
         latLon: coord,
         json: weatherData[1] as Prisma.JsonObject,
         showOnMainPage: true,
-        location: weatherData[0]?.loc as string,
+        location: weatherData[0]?.name as string,
       },
     })
   })
 }
 
 const updateWeatherEntries = async () => {
-  const weatherData = await prisma.weather.findMany({})
+  const weatherData = await prisma.weather.findMany()
 
   const responses = await Promise.all(
     weatherData.map(async (data) => {
@@ -83,6 +83,8 @@ export default async function handler(
   }
 
   try {
+    const userEntries = await updateWeatherEntries()
+
     const mainPageisEmpty =
       (await prisma.weather.findFirst({
         where: {
@@ -94,8 +96,7 @@ export default async function handler(
       await seed()
     }
 
-    const output = await updateWeatherEntries()
-    output.length
+    userEntries.length
       ? res.status(200).json({ message: "success" })
       : res.status(500).json({ message: "failure" })
   } catch (error) {
