@@ -85,22 +85,20 @@ export default async function handler(
   try {
     const weatherEntries = await updateWeatherEntries()
 
-    const noMainPage =
+    const mainPageData =
       (await prisma.weather.findFirst({
         where: {
           showOnMainPage: true,
         },
       })) == undefined
 
-    if (noMainPage) {
+    if (mainPageData) {
       await seed()
     }
 
-    const entries = (weatherEntries.length > 0).toString()
-
     weatherEntries.length
       ? res.status(200).json({
-          message: `success, users: ${entries}, mainPage: ${noMainPage.toString()}`,
+          message: `success, mainPage: ${mainPageData.toString()}`,
         })
       : res.status(500).json({ message: "failure" })
   } catch (error) {
