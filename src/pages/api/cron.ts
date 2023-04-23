@@ -21,7 +21,7 @@ const seed = async () => {
     })
   )
 
-  responses.map(async (weatherData) => {
+  const updatePromises = responses.map(async (weatherData) => {
     const lat = weatherData[0]?.lat as string
     const lon = weatherData[0]?.lon as string
     const coord = `${lat},${lon}`
@@ -41,6 +41,7 @@ const seed = async () => {
       },
     })
   })
+  return Promise.all(updatePromises)
 }
 
 const updateWeatherEntries = async () => {
