@@ -11,7 +11,6 @@ const seed = async () => {
   const mainPageLocations = [
     { lat: "40.7376", lon: "-73.8789", name: "New York" },
   ]
-
   const mainPageDataFromAPI = await Promise.all(
     mainPageLocations.map(async (loc) => {
       const lat = loc.lat
@@ -94,20 +93,13 @@ export default async function handler(
   try {
     const updateWeatherEntriesFromDb = await updateWeatherEntries()
 
-    const noMainPageData =
-      (await prisma.weather.findFirst({
-        where: {
-          showOnMainPage: true,
-        },
-      })) == undefined
-
-    if (noMainPageData) {
+    if (updateWeatherEntriesFromDb.length == 0) {
       await seed()
     }
 
     updateWeatherEntriesFromDb.length > 0
       ? res.status(200).json({
-          message: `success, mainPage: ${noMainPageData.toString()}`,
+          message: `success}`,
         })
       : res.status(500).json({ message: "failure" })
   } catch (error) {
