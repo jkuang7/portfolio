@@ -8,10 +8,12 @@ const prisma = new PrismaClient()
 const WEATHER_KEY = process.env.WEATHER_KEY as string
 
 const seed = async () => {
-  const locations = [{ lat: "40.7376", lon: "-73.8789", name: "New York" }]
+  const mainPageLocations = [
+    { lat: "40.7376", lon: "-73.8789", name: "New York" },
+  ]
 
-  const responses = await Promise.all(
-    locations.map(async (loc) => {
+  const mainPageDataFromAPI = await Promise.all(
+    mainPageLocations.map(async (loc) => {
       const lat = loc.lat
       const lon = loc.lon
       const response = await fetch(
@@ -21,7 +23,7 @@ const seed = async () => {
     })
   )
 
-  const updatePromises = responses.map(async (weatherData) => {
+  const updateMainPageWeatherEntries = mainPageDataFromAPI.map(async (weatherData) => {
     const lat = weatherData[0]?.lat as string
     const lon = weatherData[0]?.lon as string
     const coord = `${lat},${lon}`
@@ -41,13 +43,13 @@ const seed = async () => {
       },
     })
   })
-  return Promise.all(updatePromises)
+  return Promise.all(updateMainPageWeatherEntries)
 }
 
 const updateWeatherEntries = async () => {
   const weatherData = await prisma.weather.findMany()
 
-  const responses = await Promise.all(
+  const weatherEntriesFromDb = await Promise.all(
     weatherData.map(async (data) => {
       const latLon = data.latLon
       const [lat, lon] = latLon.split(",") as [string, string]
@@ -60,7 +62,7 @@ const updateWeatherEntries = async () => {
     })
   )
 
-  return responses.map(async (weatherData) => {
+  const updateWeatherEntriesFromDb = weatherEntriesFromDb.map(async (weatherData) => {
     const latLon = weatherData[0] as string
 
     await prisma.weather.update({
@@ -72,6 +74,8 @@ const updateWeatherEntries = async () => {
       },
     })
   })
+
+  return Promise.all(updateWeatherEntriesFromDb)
 }
 
 export default async function handler(
@@ -86,20 +90,20 @@ export default async function handler(
   try {
     const weatherEntries = await updateWeatherEntries()
 
-    const mainPageData =
+    const noMainPageData =
       (await prisma.weather.findFirst({
         where: {
           showOnMainPage: true,
         },
       })) == undefined
 
-    if (mainPageData) {
+    if (noMainPageData) {
       await seed()
     }
 
     weatherEntries.length
       ? res.status(200).json({
-          message: `success, mainPage: ${mainPageData.toString()}`,
+          message: `success, mainPage: ${noMainPageData.toString()}`,
         })
       : res.status(500).json({ message: "failure" })
   } catch (error) {
