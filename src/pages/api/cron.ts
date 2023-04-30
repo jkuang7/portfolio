@@ -11,7 +11,7 @@ const seed = async () => {
   const mainPageLocations = [
     { lat: "40.7376", lon: "-73.8789", name: "New York" },
   ]
-  const mainPageDataFromAPI = await Promise.all(
+  const mainPageData = await Promise.all(
     mainPageLocations.map(async (loc) => {
       const lat = loc.lat
       const lon = loc.lon
@@ -22,36 +22,34 @@ const seed = async () => {
     })
   )
 
-  const updateMainPageWeatherEntriesInDb = mainPageDataFromAPI.map(
-    async (weatherData) => {
-      const lat = weatherData[0]?.lat as string
-      const lon = weatherData[0]?.lon as string
-      const coord = `${lat},${lon}`
+  const updateMainPage = mainPageData.map(async (weatherData) => {
+    const lat = weatherData[0]?.lat as string
+    const lon = weatherData[0]?.lon as string
+    const coord = `${lat},${lon}`
 
-      await prisma.weather.upsert({
-        where: {
-          latLon: coord,
-        },
-        update: {
-          json: weatherData[1] as Prisma.JsonObject,
-        },
-        create: {
-          latLon: coord,
-          json: weatherData[1] as Prisma.JsonObject,
-          showOnMainPage: true,
-          location: weatherData[0]?.name as string,
-        },
-      })
-    }
-  )
-  return Promise.all(updateMainPageWeatherEntriesInDb)
+    await prisma.weather.upsert({
+      where: {
+        latLon: coord,
+      },
+      update: {
+        json: weatherData[1] as Prisma.JsonObject,
+      },
+      create: {
+        latLon: coord,
+        json: weatherData[1] as Prisma.JsonObject,
+        showOnMainPage: true,
+        location: weatherData[0]?.name as string,
+      },
+    })
+  })
+  return Promise.all(updateMainPage)
 }
 
-const updateWeatherEntries = async () => {
-  const weatherEntriesFromDb = await prisma.weather.findMany()
+const updateWeather = async () => {
+  const weatherEntries = await prisma.weather.findMany()
 
-  const weatherEntriesFromAPI = await Promise.all(
-    weatherEntriesFromDb.map(async (data) => {
+  const weatherData = await Promise.all(
+    weatherEntries.map(async (data) => {
       const latLon = data.latLon
       const [lat, lon] = latLon.split(",") as [string, string]
 
@@ -63,22 +61,20 @@ const updateWeatherEntries = async () => {
     })
   )
 
-  const updateWeatherEntriesInDb = weatherEntriesFromAPI.map(
-    async (weatherData) => {
-      const latLon = weatherData[0] as string
+  const updateWeatherInDB = weatherData.map(async (weatherData) => {
+    const latLon = weatherData[0] as string
 
-      await prisma.weather.update({
-        where: {
-          latLon: latLon,
-        },
-        data: {
-          json: weatherData[1] as Prisma.JsonObject,
-        },
-      })
-    }
-  )
+    await prisma.weather.update({
+      where: {
+        latLon: latLon,
+      },
+      data: {
+        json: weatherData[1] as Prisma.JsonObject,
+      },
+    })
+  })
 
-  return Promise.all(updateWeatherEntriesInDb)
+  return Promise.all(updateWeatherInDB)
 }
 
 export default async function handler(
@@ -91,17 +87,17 @@ export default async function handler(
   }
 
   try {
-    const updateWeatherEntriesFromDb = await updateWeatherEntries()
+    const updatingWeather = await updateWeather()
 
-    if (updateWeatherEntriesFromDb.length == 0) {
+    if (updatingWeather.length == 0) {
       await seed()
     }
 
-    updateWeatherEntriesFromDb.length > 0
+    updatingWeather.length > 0
       ? res.status(200).json({
           message: `success}`,
         })
-      : res.status(500).json({ message: "failure" })
+      : res.status(500).json({ message: "Failure, no entries updated" })
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: "Something went wrong" })
