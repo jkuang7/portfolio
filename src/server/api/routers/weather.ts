@@ -114,6 +114,12 @@ const ratelimit = new Ratelimit({
 //routers
 export const weatherRouter = createTRPCRouter({
   getWeatherForMainPage: publicProcedure.query(async ({ ctx }) => {
+    const { success } = await ratelimit.limit(ctx.userId as string)
+
+    if (!success) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
+    }
+
     const weatherData = await ctx.prisma.weather.findMany({
       take: 100,
       where: {
@@ -128,7 +134,7 @@ export const weatherRouter = createTRPCRouter({
   getWeatherForUserPage: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { success } = await ratelimit.limit(input.userId)
+      const { success } = await ratelimit.limit(ctx.userId as string)
 
       if (!success) {
         throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
