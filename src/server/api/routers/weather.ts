@@ -1,44 +1,44 @@
-import { z } from "zod";
+import { z } from "zod"
 
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc"
 
-import type { Weather } from "@prisma/client";
+import type { Weather } from "@prisma/client"
 
 interface weatherInput {
   coord: {
-    lon: number;
-    lat: number;
-  };
+    lon: number
+    lat: number
+  }
   weather: {
-    id: number;
-    main: string;
-    description: string;
-    icon: string;
-  }[];
-  base: string;
+    id: number
+    main: string
+    description: string
+    icon: string
+  }[]
+  base: string
   main: {
-    temp: number;
-    feels_like: number;
-    temp_min: number;
-    temp_max: number;
-    pressure: number;
-    humidity: number;
-  };
-  visibility: number;
-  wind: { speed: number; deg: number };
-  cloud: { all: number };
-  dt: number;
+    temp: number
+    feels_like: number
+    temp_min: number
+    temp_max: number
+    pressure: number
+    humidity: number
+  }
+  visibility: number
+  wind: { speed: number; deg: number }
+  cloud: { all: number }
+  dt: number
   sys: {
-    type: number;
-    id: number;
-    country: string;
-    sunrise: number;
-    sunset: number;
-  };
-  timezone: number;
-  id: number;
-  name: string;
-  cod: number;
+    type: number
+    id: number
+    country: string
+    sunrise: number
+    sunset: number
+  }
+  timezone: number
+  id: number
+  name: string
+  cod: number
 }
 
 const weatherIconMap: { [key: string]: string } = {
@@ -60,18 +60,18 @@ const weatherIconMap: { [key: string]: string } = {
   "13n": "https://openweathermap.org/img/wn/13n@2x.png",
   "50d": "https://openweathermap.org/img/wn/50d@2x.png",
   "50n": "https://openweathermap.org/img/wn/50n@2x.png",
-};
+}
 
 //helpers
 const convertKelvinToFahrenheit = (kelvin: number | undefined) => {
   if (kelvin === undefined) {
-    return undefined;
+    return undefined
   }
-  return Math.round(((kelvin - 273.15) * 9) / 5 + 32);
-};
+  return Math.round(((kelvin - 273.15) * 9) / 5 + 32)
+}
 
 const weatherDTO = (weather: Weather) => {
-  const data = weather.json?.valueOf() as weatherInput;
+  const data = weather.json?.valueOf() as weatherInput
 
   const weatherData = {
     name: data?.name,
@@ -88,17 +88,26 @@ const weatherDTO = (weather: Weather) => {
     lat: data?.coord?.lat,
     iconImageURL: "",
     updatedAt: weather.updatedAt,
-  };
+  }
 
   //update iconImageURL in weatherData to the corresponding image link
   if (data.weather[0]?.icon) {
-    const iconId = data.weather[0]?.icon;
-    const iconImageURL = weatherIconMap[iconId];
-    weatherData.iconImageURL = iconImageURL || "";
+    const iconId = data.weather[0]?.icon
+    const iconImageURL = weatherIconMap[iconId]
+    weatherData.iconImageURL = iconImageURL || ""
   }
 
-  return weatherData;
-};
+  return weatherData
+}
+
+import { Redis } from "@upstash/redis"
+import { Ratelimit } from "@upstash/ratelimit"
+
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.fixedWindow(10, "10 s"),
+  analytics: true,
+})
 
 //routers
 export const weatherRouter = createTRPCRouter({
@@ -109,9 +118,9 @@ export const weatherRouter = createTRPCRouter({
         showOnMainPage: true,
       },
       orderBy: [{ location: "asc" }],
-    });
+    })
 
-    return weatherData.map((data) => weatherDTO(data));
+    return weatherData.map((data) => weatherDTO(data))
   }),
 
   getWeatherForUserPage: publicProcedure
@@ -122,7 +131,7 @@ export const weatherRouter = createTRPCRouter({
           userId: input.userId,
         },
         take: 100,
-      });
+      })
 
       const weathers = await ctx.prisma.weather.findMany({
         where: {
@@ -130,8 +139,8 @@ export const weatherRouter = createTRPCRouter({
             in: userWeathers.map((uw) => uw.latLon),
           },
         },
-      });
+      })
 
-      return weathers.map((data) => weatherDTO(data));
+      return weathers.map((data) => weatherDTO(data))
     }),
-});
+})
