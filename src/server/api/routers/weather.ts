@@ -113,25 +113,34 @@ const ratelimit = new Ratelimit({
   analytics: true,
 })
 
+interface CacheResult<T> {
+  data: T
+  source: "cache" | "database"
+}
+
 //Redis Cache
 async function cacheFetch<T>(
   cacheKey: string,
   fetchFn: () => Promise<T>,
   cacheExpiry = 60
-): Promise<T> {
+): Promise<CacheResult<T>> {
   const cacheResult = await redis.get<T>(cacheKey)
 
   if (cacheResult) {
-    console.log("Data fetched from cache for key: ${cacheKey}")
-    return cacheResult
+    return {
+      data: cacheResult,
+      source: "cache",
+    }
   }
 
-  console.log(`Data fetched from database for key: ${cacheKey}`)
   const data = await fetchFn()
 
   await redis.set(cacheKey, data, { ex: cacheExpiry })
 
-  return data
+  return {
+    data: data,
+    source: "database",
+  }
 }
 
 //routers
