@@ -5,7 +5,7 @@ import type { Prisma } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
-const WEATHER_KEY = process.env.WEATHER_KEY as string
+const OPEN_WEATHER_MAP_KEY = process.env.OPEN_WEATHER_MAP_KEY as string
 
 const seed = async () => {
   const mainPageLocations = [
@@ -16,7 +16,7 @@ const seed = async () => {
       const lat = loc.lat
       const lon = loc.lon
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_KEY}`
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPEN_WEATHER_MAP_KEY}`
       )
       return [loc, (await response.json()) as Prisma.JsonObject]
     })
@@ -54,7 +54,7 @@ const updateWeather = async () => {
       const [lat, lon] = latLon.split(",") as [string, string]
 
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_KEY}`
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPEN_WEATHER_MAP_KEY}`
       )
 
       return [latLon, (await response.json()) as Prisma.JsonObject]
