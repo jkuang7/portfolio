@@ -156,21 +156,23 @@ const WeatherPage = () => {
   const user = useUser()
   const { userId } = useAuth() as { userId: string }
 
-  const { data } = user.isSignedIn
+  const weatherData = user.isSignedIn
     ? api.weather.getWeatherForUserPage.useQuery({
         userId: userId,
       })
     : api.weather.getWeatherForMainPage.useQuery()
 
-  if (!data) {
+  const { weather } = weatherData.data || { data: undefined, source: undefined }
+
+  if (!weather) {
     return (
       <p className="flex h-screen items-center justify-center">Loading...</p>
     )
   } else {
     return !user.isSignedIn ? (
-      <MainPageWeather data={data} />
+      <MainPageWeather data={weather} />
     ) : (
-      <UserPageWeather data={data} />
+      <UserPageWeather data={weather} />
     )
   }
 }

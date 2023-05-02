@@ -104,57 +104,98 @@ import { Redis } from "@upstash/redis"
 import { Ratelimit } from "@upstash/ratelimit"
 import { TRPCError } from "@trpc/server"
 
-//ratelimit 10 requests per 60 minutes
+const redis = Redis.fromEnv()
+
+//ratelimit 50 requests per 60 minutes
 const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.fixedWindow(10, "60m"),
+  redis: redis,
+  limiter: Ratelimit.fixedWindow(50, "60m"),
   analytics: true,
 })
+
+interface CacheResult<T> {
+  weather: T[]
+  source: "cache" | "database"
+}
+
+//Redis Cache
+async function cacheFetch<T>(
+  cacheKey: string,
+  fetchFn: () => Promise<T[]>,
+  cacheExpiry = 60
+): Promise<CacheResult<T>> {
+  const cacheResult = await redis.get(cacheKey)
+
+  if (cacheResult) {
+    return {
+      weather: cacheResult as T[],
+      source: "cache",
+    }
+  }
+
+  const data = await fetchFn()
+
+  await redis.set(cacheKey, JSON.stringify(data), { ex: cacheExpiry })
+
+  return {
+    weather: data,
+    source: "database",
+  }
+}
 
 //routers
 export const weatherRouter = createTRPCRouter({
   getWeatherForMainPage: publicProcedure.query(async ({ ctx }) => {
-    const { success } = await ratelimit.limit(ctx.userId as string)
-
-    if (!success) {
-      throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
-    }
-
-    const weatherData = await ctx.prisma.weather.findMany({
-      take: 100,
-      where: {
-        showOnMainPage: true,
-      },
-      orderBy: [{ location: "asc" }],
-    })
-
-    return weatherData.map((data) => weatherDTO(data))
-  }),
-
-  getWeatherForUserPage: publicProcedure
-    .input(z.object({ userId: z.string() }))
-    .query(async ({ ctx, input }) => {
+    const weatherData = await cacheFetch("mainPageWeather", async () => {
       const { success } = await ratelimit.limit(ctx.userId as string)
 
       if (!success) {
         throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
       }
 
-      const userWeathers = await ctx.prisma.userWeather.findMany({
-        where: {
-          userId: input.userId,
-        },
+      const data = await ctx.prisma.weather.findMany({
         take: 100,
-      })
-
-      const weathers = await ctx.prisma.weather.findMany({
         where: {
-          latLon: {
-            in: userWeathers.map((uw) => uw.latLon),
-          },
+          showOnMainPage: true,
         },
+        orderBy: [{ location: "asc" }],
       })
 
-      return weathers.map((data) => weatherDTO(data))
+      return data.map((data) => weatherDTO(data))
+    })
+
+    return weatherData
+  }),
+
+  getWeatherForUserPage: publicProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const cacheKey = `userPageWeather:${input.userId}`
+
+      const weatherData = await cacheFetch(cacheKey, async () => {
+        const { success } = await ratelimit.limit(ctx.userId as string)
+
+        if (!success) {
+          throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
+        }
+        const userWeathers = await ctx.prisma.userWeather.findMany({
+          where: {
+            userId: input.userId,
+          },
+          take: 100,
+        })
+
+        const weathers = await ctx.prisma.weather.findMany({
+          where: {
+            latLon: {
+              in: userWeathers.map((uw) => uw.latLon),
+            },
+          },
+        })
+
+        return weathers.map((data) => weatherDTO(data))
+      })
+
+      return weatherData
     }),
 })
