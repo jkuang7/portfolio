@@ -102,10 +102,12 @@ const weatherDTO = (weather: Weather) => {
 
 import { Redis } from "@upstash/redis"
 import { Ratelimit } from "@upstash/ratelimit"
+import { TRPCError } from "@trpc/server"
 
+//ratelimit 10 requests per 60 minutes
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.fixedWindow(10, "10 s"),
+  limiter: Ratelimit.fixedWindow(10, "60m"),
   analytics: true,
 })
 
@@ -126,6 +128,12 @@ export const weatherRouter = createTRPCRouter({
   getWeatherForUserPage: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ ctx, input }) => {
+      const { success } = await ratelimit.limit(input.userId)
+
+      if (!success) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
+      }
+
       const userWeathers = await ctx.prisma.userWeather.findMany({
         where: {
           userId: input.userId,
