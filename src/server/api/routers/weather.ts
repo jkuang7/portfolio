@@ -104,12 +104,35 @@ import { Redis } from "@upstash/redis"
 import { Ratelimit } from "@upstash/ratelimit"
 import { TRPCError } from "@trpc/server"
 
-//ratelimit 10 requests per 60 minutes
+const redis = Redis.fromEnv()
+
+//ratelimit 50 requests per 60 minutes
 const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.fixedWindow(10, "60m"),
+  redis: redis,
+  limiter: Ratelimit.fixedWindow(50, "60m"),
   analytics: true,
 })
+
+//Redis Cache
+async function cacheFetch<T>(
+  cacheKey: string,
+  fetchFn: () => Promise<T>,
+  cacheExpiry = 60
+): Promise<T> {
+  const cacheResult = await redis.get<T>(cacheKey)
+
+  if (cacheResult) {
+    console.log("Data fetched from cache for key: ${cacheKey}")
+    return cacheResult
+  }
+
+  console.log(`Data fetched from database for key: ${cacheKey}`)
+  const data = await fetchFn()
+
+  await redis.set(cacheKey, data, { ex: cacheExpiry })
+
+  return data
+}
 
 //routers
 export const weatherRouter = createTRPCRouter({
@@ -120,15 +143,19 @@ export const weatherRouter = createTRPCRouter({
       throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
     }
 
-    const weatherData = await ctx.prisma.weather.findMany({
-      take: 100,
-      where: {
-        showOnMainPage: true,
-      },
-      orderBy: [{ location: "asc" }],
+    const weatherData = await cacheFetch("mainPageWeather", async () => {
+      const data = await ctx.prisma.weather.findMany({
+        take: 100,
+        where: {
+          showOnMainPage: true,
+        },
+        orderBy: [{ location: "asc" }],
+      })
+
+      return data.map((data) => weatherDTO(data))
     })
 
-    return weatherData.map((data) => weatherDTO(data))
+    return weatherData
   }),
 
   getWeatherForUserPage: publicProcedure
@@ -140,21 +167,27 @@ export const weatherRouter = createTRPCRouter({
         throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
       }
 
-      const userWeathers = await ctx.prisma.userWeather.findMany({
-        where: {
-          userId: input.userId,
-        },
-        take: 100,
-      })
+      const cacheKey = `userPageWeather:${input.userId}`
 
-      const weathers = await ctx.prisma.weather.findMany({
-        where: {
-          latLon: {
-            in: userWeathers.map((uw) => uw.latLon),
+      const weatherData = await cacheFetch(cacheKey, async () => {
+        const userWeathers = await ctx.prisma.userWeather.findMany({
+          where: {
+            userId: input.userId,
           },
-        },
+          take: 100,
+        })
+
+        const weathers = await ctx.prisma.weather.findMany({
+          where: {
+            latLon: {
+              in: userWeathers.map((uw) => uw.latLon),
+            },
+          },
+        })
+
+        return weathers.map((data) => weatherDTO(data))
       })
 
-      return weathers.map((data) => weatherDTO(data))
+      return weatherData
     }),
 })
