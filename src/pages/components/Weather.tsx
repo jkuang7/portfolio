@@ -2,7 +2,6 @@ import Image from "next/image"
 import { api } from "~/utils/api"
 import React, { useState, useEffect } from "react"
 import { useUser, useAuth } from "@clerk/nextjs"
-import { stringify } from "querystring"
 
 interface SearchBoxProps {
   placeholder: string
@@ -170,6 +169,17 @@ const WeatherPage = () => {
   const response = isSignedIn ? userResponse : mainResponse
 
   const weatherData = response?.data?.weather
+
+  const users = api.user.addUser.useMutation()
+
+  useEffect(() => {
+    const addUserIfDNE = () => {
+      if (isSignedIn) {
+        users.mutate()
+      }
+    }
+    addUserIfDNE()
+  }, [isSignedIn])
 
   if (isSignedIn == undefined) {
     return (
