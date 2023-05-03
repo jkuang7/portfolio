@@ -148,7 +148,6 @@ export const weatherRouter = createTRPCRouter({
   getWeatherForMainPage: publicProcedure.query(async ({ ctx }) => {
     const weatherData = await cacheFetch("mainPageWeather", async () => {
       const { success } = await ratelimit.limit(ctx.userId as string)
-
       if (!success) {
         throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
       }

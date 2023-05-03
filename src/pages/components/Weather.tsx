@@ -1,7 +1,8 @@
 import Image from "next/image"
 import { api } from "~/utils/api"
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useUser, useAuth } from "@clerk/nextjs"
+import { stringify } from "querystring"
 
 interface SearchBoxProps {
   placeholder: string
@@ -153,26 +154,24 @@ const UserPageWeather: React.FC<WeatherProps> = ({ data }) => {
 }
 
 const WeatherPage = () => {
-  const user = useUser()
+  const { isSignedIn } = useUser()
   const { userId } = useAuth() as { userId: string }
 
-  const weatherData = user.isSignedIn
-    ? api.weather.getWeatherForUserPage.useQuery({
-        userId: userId,
-      })
+  const weatherQuery = isSignedIn
+    ? api.weather.getWeatherForUserPage.useQuery({ userId })
     : api.weather.getWeatherForMainPage.useQuery()
 
-  const { weather } = weatherData.data || { data: undefined, source: undefined }
+  const weatherData = weatherQuery.data?.weather
 
-  if (!weather) {
+  if (isSignedIn == undefined) {
     return (
       <p className="flex h-screen items-center justify-center">Loading...</p>
     )
   } else {
-    return !user.isSignedIn ? (
-      <MainPageWeather data={weather} />
+    return isSignedIn ? (
+      <UserPageWeather data={weatherData || []} />
     ) : (
-      <UserPageWeather data={weather} />
+      <MainPageWeather data={weatherData || []} />
     )
   }
 }
