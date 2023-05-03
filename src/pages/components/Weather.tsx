@@ -157,11 +157,19 @@ const WeatherPage = () => {
   const { isSignedIn } = useUser()
   const { userId } = useAuth() as { userId: string }
 
-  const weatherQuery = isSignedIn
-    ? api.weather.getWeatherForUserPage.useQuery({ userId })
-    : api.weather.getWeatherForMainPage.useQuery()
+  const userResponse = api.weather.getWeatherForUserPage.useQuery(
+    { userId },
+    { enabled: isSignedIn === true, refetchOnWindowFocus: false }
+  )
 
-  const weatherData = weatherQuery.data?.weather
+  const mainResponse = api.weather.getWeatherForMainPage.useQuery(undefined, {
+    enabled: isSignedIn === false,
+    refetchOnWindowFocus: false,
+  })
+
+  const response = isSignedIn ? userResponse : mainResponse
+
+  const weatherData = response?.data?.weather
 
   if (isSignedIn == undefined) {
     return (
