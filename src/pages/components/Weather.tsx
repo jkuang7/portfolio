@@ -127,15 +127,18 @@ const MainPageWeather: React.FC<WeatherProps> = ({ data }) => {
     </>
   )
 }
+interface UserPageWeatherProps {
+  data: WeatherProps["data"]
+  handleSearch: SearchBoxProps["onSearch"]
+}
 
-const UserPageWeather: React.FC<WeatherProps> = ({ data }) => {
-  const handleSearch = (searchText: string) => {
-    console.log(`Looking up: ${searchText}`)
-  }
-
+const UserPageWeather: React.FC<UserPageWeatherProps> = ({
+  data,
+  handleSearch,
+}) => {
   return (
     <>
-      <div className="m-1 mt-5 flex  items-center justify-center">
+      <div className="m-1 mt-5 flex items-center justify-center">
         <SearchBox
           onSearch={handleSearch}
           placeholder="email@gmail.com"
@@ -143,7 +146,7 @@ const UserPageWeather: React.FC<WeatherProps> = ({ data }) => {
         />
       </div>
       <div className="m-1 mt-2 flex items-center justify-center">
-        <SearchBox onSearch={handleSearch} placeholder="Search for a city" />
+        <SearchBox onSearch={handleSearch} placeholder="Search for address" />
       </div>
       {data?.map((weather) => {
         return <WeatherCard key={weather.name} {...weather} />
@@ -155,6 +158,18 @@ const UserPageWeather: React.FC<WeatherProps> = ({ data }) => {
 const WeatherPage = () => {
   const { isSignedIn } = useUser()
   const { userId } = useAuth() as { userId: string }
+  const users = api.user.addUser.useMutation()
+  const getWeather = api.weather.getWeatherForLocation.useMutation()
+  const [weatherData, setWeatherData] = useState<WeatherProps["data"]>([])
+
+  useEffect(() => {
+    const addUserIfDNE = () => {
+      if (isSignedIn) {
+        users.mutate()
+      }
+    }
+    addUserIfDNE()
+  }, [isSignedIn])
 
   const userResponse = api.weather.getWeatherForUserPage.useQuery(
     { userId },
@@ -168,29 +183,35 @@ const WeatherPage = () => {
 
   const response = isSignedIn ? userResponse : mainResponse
 
-  const weatherData = response?.data?.weather
+  setWeatherData(response?.data?.weather ?? [])
 
-  const users = api.user.addUser.useMutation()
+  const handleSearch = (searchText: string) => {
+    console.log(`Looking up: ${searchText}`)
+    getWeather.mutate(
+      { location: searchText },
+      {
+        onSuccess: () => {
+          const userResponse = api.weather.getWeatherForUserPage.useQuery(
+            { userId },
+            { refetchOnWindowFocus: false }
+          )
 
-  useEffect(() => {
-    const addUserIfDNE = () => {
-      if (isSignedIn) {
-        users.mutate()
+          setWeatherData(userResponse?.data?.weather ?? [])
+        },
       }
-    }
-    addUserIfDNE()
-  }, [isSignedIn])
+    )
 
-  if (isSignedIn == undefined) {
-    return (
-      <p className="flex h-screen items-center justify-center">Loading...</p>
-    )
-  } else {
-    return isSignedIn ? (
-      <UserPageWeather data={weatherData || []} />
-    ) : (
-      <MainPageWeather data={weatherData || []} />
-    )
+    if (isSignedIn == undefined) {
+      return (
+        <p className="flex h-screen items-center justify-center">Loading...</p>
+      )
+    } else {
+      return isSignedIn ? (
+        <UserPageWeather data={weatherData || []} handleSearch={handleSearch} />
+      ) : (
+        <MainPageWeather data={weatherData || []} />
+      )
+    }
   }
 }
 

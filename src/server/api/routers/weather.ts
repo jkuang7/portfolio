@@ -4,6 +4,8 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc"
 
 import type { Weather } from "@prisma/client"
 
+import axios from "axios"
+
 interface weatherInput {
   coord: {
     lon: number
@@ -143,6 +145,41 @@ async function cacheFetch<T>(
   }
 }
 
+interface GeocodeResult {
+  results: {
+    address_components: {
+      long_name: string
+      short_name: string
+      types: string[]
+    }[]
+    formatted_address: string
+    geometry: {
+      location: {
+        lat: number
+        lng: number
+      }
+      location_type: string
+      viewport: {
+        northeast: {
+          lat: number
+          lng: number
+        }
+        southwest: {
+          lat: number
+          lng: number
+        }
+      }
+    }
+    place_id: string
+    plus_code: {
+      compound_code: string
+      global_code: string
+    }
+    types: string[]
+  }[]
+  status: string
+}
+
 //routers
 export const weatherRouter = createTRPCRouter({
   getWeatherForMainPage: publicProcedure.query(async ({ ctx }) => {
@@ -196,5 +233,52 @@ export const weatherRouter = createTRPCRouter({
       })
 
       return weatherData
+    }),
+
+  getWeatherForLocation: publicProcedure
+    .input(z.object({ location: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const GOOGLE_CLOUD_API_KEY = process.env.GOOGLE_CLOUD_API_KEY as string
+
+      const params = {
+        address: input.location,
+        key: GOOGLE_CLOUD_API_KEY,
+      }
+
+      const { data } = (await axios.get<GeocodeResult>(
+        "https://maps.googleapis.com/maps/api/geocode/json",
+        { params }
+      )) as { data: GeocodeResult }
+
+      const lat = data?.results[0]?.geometry?.location?.lat.toString() as string
+      const lon = data?.results[0]?.geometry.location.lng.toString() as string
+      const latLon = `${lat},${lon}`
+
+      const OPEN_WEATHER_MAP_KEY = process.env.OPEN_WEATHER_MAP_KEY as string
+
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPEN_WEATHER_MAP_KEY}`
+      )
+
+      const jsonResponse = (await response.json()) as weatherInput
+
+      const weather = await ctx.prisma.weather.upsert({
+        where: {
+          latLon,
+        },
+        create: {
+          latLon,
+          json: JSON.stringify(jsonResponse),
+          showOnMainPage: false,
+          location: input.location,
+        },
+        update: {
+          json: JSON.stringify(jsonResponse),
+          showOnMainPage: false,
+          location: input.location,
+        },
+      })
+
+      return weatherDTO(weather)
     }),
 })
