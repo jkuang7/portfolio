@@ -13,13 +13,13 @@ const seed = async () => {
       lat: "40.6966616",
       lon: "-74.6377",
       name: "New York",
-      showOnnMainPage: true,
+      showOnMainPage: true,
     },
     {
       lat: "40.7376",
       lon: "-73.8789",
       name: "Elmhurst",
-      showOnnMainPage: false,
+      showOnMainPage: false,
     },
   ]
   const data = await Promise.all(
@@ -48,7 +48,7 @@ const seed = async () => {
       create: {
         latLon: coord,
         json: weatherData[1] as Prisma.JsonObject,
-        showOnMainPage: weatherData[0]?.showOnnMainPage as boolean,
+        showOnMainPage: weatherData[0]?.showOnMainPage as boolean,
         location: weatherData[0]?.name as string,
       },
     })
@@ -98,6 +98,7 @@ export default async function handler(
   }
 
   try {
+    await seed()
     const updatingWeather = await updateWeather()
 
     if (updatingWeather.length == 0) {

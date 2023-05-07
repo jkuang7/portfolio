@@ -35,4 +35,5 @@ model UserWeather {
   updatedAt DateTime @updatedAt
 
   @@index([userId, latLon])
+  @@unique([userId, latLon])
 }

@@ -3,12 +3,6 @@ import { api } from "~/utils/api"
 import React, { useState, useEffect } from "react"
 import { useUser, useAuth } from "@clerk/nextjs"
 
-interface SearchBoxProps {
-  placeholder: string
-  onSearch: (query: string) => void
-  buttonName?: string
-}
-
 interface Weather {
   name?: string
   location?: string
@@ -30,36 +24,63 @@ interface WeatherProps {
   data: Weather[]
 }
 
-const SearchBox: React.FC<SearchBoxProps> = ({
-  placeholder,
-  onSearch,
-  buttonName = "Search",
-}) => {
-  const [query, setQuery] = useState("")
+interface InputFormProps {
+  setWeatherData: React.Dispatch<React.SetStateAction<Weather[]>>
+}
+
+const InputForm: React.FC<InputFormProps> = ({ setWeatherData }) => {
+  const { userId } = useAuth() as { userId: string }
+  const getWeather = api.weather.getWeatherForLocation.useMutation()
+  const [location, setLocation] = useState("")
+  const [address, setAddress] = useState("")
+  const weathers = api.weather.getWeatherForUserPage.useQuery({ userId })
+
+  const handleLocation = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    setLocation(event.target.value)
+  }
+
+  const handleAddress = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    setAddress(event.target.value)
+  }
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    onSearch(query)
-  }
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(event.target.value)
+    if (location && address) {
+      // getWeather.mutate({ location, address })
+      // setLocation("")
+      // setAddress("")
+      // if (weathers.data?.weather) {
+      //   setWeatherData(weathers.data?.weather)
+      // }
+    } else {
+      alert("Please enter a location name and an address")
+    }
   }
 
   return (
     <form onSubmit={handleSearch} className="flex items-center">
       <input
         type="text"
-        placeholder={placeholder}
-        value={query}
-        onChange={handleInputChange}
+        placeholder={"Location Name"}
+        value={location}
+        onChange={handleLocation}
         className="rounded-l-md border border-gray-300 px-4 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
       />
+      <input
+        type="text"
+        placeholder={"Address"}
+        value={address}
+        onChange={handleAddress}
+        className="rounded-l-md border border-gray-300 px-4 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+
       <button
         type="submit"
         className="rounded-r-md border border-blue-500 bg-blue-500 px-4 py-2 font-semibold text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
       >
-        {buttonName}
+        Search
       </button>
     </form>
   )
@@ -127,27 +148,14 @@ const MainPageWeather: React.FC<WeatherProps> = ({ data }) => {
     </>
   )
 }
-interface UserPageWeatherProps {
-  data: WeatherProps["data"]
-  handleSearch: SearchBoxProps["onSearch"]
-}
 
-const UserPageWeather: React.FC<UserPageWeatherProps> = ({
-  data,
-  handleSearch,
-}) => {
+const UserPageWeather: React.FC<{
+  data: Weather[]
+  setWeatherData: React.Dispatch<React.SetStateAction<Weather[]>>
+}> = ({ data, setWeatherData }) => {
   return (
     <>
-      <div className="m-1 mt-5 flex items-center justify-center">
-        <SearchBox
-          onSearch={handleSearch}
-          placeholder="email@gmail.com"
-          buttonName="Add Weather To Daily Calendar"
-        />
-      </div>
-      <div className="m-1 mt-2 flex items-center justify-center">
-        <SearchBox onSearch={handleSearch} placeholder="Search for address" />
-      </div>
+      {<InputForm setWeatherData={setWeatherData} />}
       {data?.map((weather) => {
         return <WeatherCard key={weather.name} {...weather} />
       })}
@@ -158,18 +166,8 @@ const UserPageWeather: React.FC<UserPageWeatherProps> = ({
 const WeatherPage = () => {
   const { isSignedIn } = useUser()
   const { userId } = useAuth() as { userId: string }
-  const users = api.user.addUser.useMutation()
-  const getWeather = api.weather.getWeatherForLocation.useMutation()
   const [weatherData, setWeatherData] = useState<WeatherProps["data"]>([])
-
-  useEffect(() => {
-    const addUserIfDNE = () => {
-      if (isSignedIn) {
-        users.mutate()
-      }
-    }
-    addUserIfDNE()
-  }, [isSignedIn])
+  const users = api.user.addUser.useMutation()
 
   const userResponse = api.weather.getWeatherForUserPage.useQuery(
     { userId },
@@ -183,35 +181,32 @@ const WeatherPage = () => {
 
   const response = isSignedIn ? userResponse : mainResponse
 
-  setWeatherData(response?.data?.weather ?? [])
-
-  const handleSearch = (searchText: string) => {
-    console.log(`Looking up: ${searchText}`)
-    getWeather.mutate(
-      { location: searchText },
-      {
-        onSuccess: () => {
-          const userResponse = api.weather.getWeatherForUserPage.useQuery(
-            { userId },
-            { refetchOnWindowFocus: false }
-          )
-
-          setWeatherData(userResponse?.data?.weather ?? [])
-        },
-      }
-    )
-
-    if (isSignedIn == undefined) {
-      return (
-        <p className="flex h-screen items-center justify-center">Loading...</p>
-      )
-    } else {
-      return isSignedIn ? (
-        <UserPageWeather data={weatherData || []} handleSearch={handleSearch} />
-      ) : (
-        <MainPageWeather data={weatherData || []} />
-      )
+  useEffect(() => {
+    if (isSignedIn) {
+      users.mutate()
     }
+  }, [isSignedIn])
+
+  useEffect(() => {
+    if (response.data?.weather) {
+      console.log("HELLO", response.data?.weather)
+      setWeatherData(response.data?.weather)
+    }
+  }, [isSignedIn, response])
+
+  if (isSignedIn == undefined) {
+    return (
+      <p className="flex h-screen items-center justify-center">Loading...</p>
+    )
+  } else {
+    return isSignedIn ? (
+      <UserPageWeather
+        data={weatherData || []}
+        setWeatherData={setWeatherData}
+      />
+    ) : (
+      <MainPageWeather data={weatherData || []} />
+    )
   }
 }
 

@@ -236,12 +236,12 @@ export const weatherRouter = createTRPCRouter({
     }),
 
   getWeatherForLocation: publicProcedure
-    .input(z.object({ location: z.string() }))
+    .input(z.object({ location: z.string(), address: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const GOOGLE_CLOUD_API_KEY = process.env.GOOGLE_CLOUD_API_KEY as string
 
       const params = {
-        address: input.location,
+        address: input.address,
         key: GOOGLE_CLOUD_API_KEY,
       }
 
@@ -279,6 +279,28 @@ export const weatherRouter = createTRPCRouter({
         },
       })
 
-      return weatherDTO(weather)
+      await ctx.prisma.userWeather.upsert({
+        where: {
+          userId_latLon: {
+            userId: ctx.userId as string,
+            latLon: latLon,
+          },
+        },
+        create: {
+          userId: ctx.userId as string,
+          latLon,
+        },
+        update: {},
+      })
+
+      const weathers = await ctx.prisma.weather.findMany({
+        where: {
+          latLon: {
+            in: [latLon],
+          },
+        },
+      })
+
+      return weathers.map((data) => weatherDTO(data))
     }),
 })
