@@ -3,10 +3,55 @@ import { api } from "~/utils/api"
 import React, { useState, useEffect } from "react"
 import { useUser, useAuth } from "@clerk/nextjs"
 
-interface SearchBoxProps {
+interface FormProps {
   placeholder: string
   onSearch: (query: string) => void
   buttonName?: string
+}
+
+const Form: React.FC<FormProps> = () => {
+  const [location, setLocation] = useState("")
+  const [address, setAddress] = useState("")
+
+  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+  }
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, placeholder } = event.target
+    event.preventDefault()
+
+    if (placeholder === "Location") {
+      setLocation(value)
+    } else {
+      setAddress(value)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSearch} className="flex items-center">
+      <input
+        type="text"
+        placeholder={"Location"}
+        value={location}
+        onChange={handleInputChange}
+        className="rounded-l-md border border-gray-300 px-4 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      <input
+        type="text"
+        placeholder={"Address"}
+        value={address}
+        onChange={handleInputChange}
+        className="rounded-l-md border border-gray-300 px-4 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      <button
+        type="submit"
+        className="rounded-r-md border border-blue-500 bg-blue-500 px-4 py-2 font-semibold text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
+      >
+        Submit
+      </button>
+    </form>
+  )
 }
 
 interface Weather {
@@ -24,45 +69,6 @@ interface Weather {
   lat?: number
   iconImageURL?: string
   updatedAt?: Date
-}
-
-interface WeatherProps {
-  data: Weather[]
-}
-
-const SearchBox: React.FC<SearchBoxProps> = ({
-  placeholder,
-  onSearch,
-  buttonName = "Search",
-}) => {
-  const [query, setQuery] = useState("")
-
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    onSearch(query)
-  }
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(event.target.value)
-  }
-
-  return (
-    <form onSubmit={handleSearch} className="flex items-center">
-      <input
-        type="text"
-        placeholder={placeholder}
-        value={query}
-        onChange={handleInputChange}
-        className="rounded-l-md border border-gray-300 px-4 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
-      <button
-        type="submit"
-        className="rounded-r-md border border-blue-500 bg-blue-500 px-4 py-2 font-semibold text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
-      >
-        {buttonName}
-      </button>
-    </form>
-  )
 }
 
 const WeatherCard: React.FC<Weather> = (data) => {
@@ -118,40 +124,6 @@ const WeatherCard: React.FC<Weather> = (data) => {
   )
 }
 
-const MainPageWeather: React.FC<WeatherProps> = ({ data }) => {
-  return (
-    <>
-      {data?.map((weather) => {
-        return <WeatherCard key={weather.name} {...weather} />
-      })}
-    </>
-  )
-}
-
-const UserPageWeather: React.FC<WeatherProps> = ({ data }) => {
-  const handleSearch = (searchText: string) => {
-    console.log(`Looking up: ${searchText}`)
-  }
-
-  return (
-    <>
-      <div className="m-1 mt-5 flex  items-center justify-center">
-        <SearchBox
-          onSearch={handleSearch}
-          placeholder="email@gmail.com"
-          buttonName="Add Weather To Daily Calendar"
-        />
-      </div>
-      <div className="m-1 mt-2 flex items-center justify-center">
-        <SearchBox onSearch={handleSearch} placeholder="Search for a city" />
-      </div>
-      {data?.map((weather) => {
-        return <WeatherCard key={weather.name} {...weather} />
-      })}
-    </>
-  )
-}
-
 const WeatherPage = () => {
   const { isSignedIn } = useUser()
   const { userId } = useAuth() as { userId: string }
@@ -186,10 +158,13 @@ const WeatherPage = () => {
       <p className="flex h-screen items-center justify-center">Loading...</p>
     )
   } else {
-    return isSignedIn ? (
-      <UserPageWeather data={weatherData || []} />
-    ) : (
-      <MainPageWeather data={weatherData || []} />
+    return (
+      <div>
+        {isSignedIn && <Form />}
+        {weatherData?.map((weather) => {
+          return <WeatherCard key={weather.name} {...weather} />
+        })}
+      </div>
     )
   }
 }
