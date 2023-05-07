@@ -37,7 +37,7 @@ const seed = async () => {
       create: {
         latLon: coord,
         json: weatherData[1] as Prisma.JsonObject,
-        showOnMainPage: true,
+        showOnHomePage: true,
         location: weatherData[0]?.name as string,
       },
     })

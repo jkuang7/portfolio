@@ -155,7 +155,7 @@ export const weatherRouter = createTRPCRouter({
       const data = await ctx.prisma.weather.findMany({
         take: 100,
         where: {
-          showOnMainPage: true,
+          showOnHomePage: true,
         },
         orderBy: [{ location: "asc" }],
       })
