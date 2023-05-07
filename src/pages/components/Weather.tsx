@@ -28,27 +28,38 @@ const Form: React.FC<FormProps> = () => {
     }
   }
 
+  useEffect(() => {
+    console.log(location, address)
+  }, [location, address])
+
   return (
-    <form onSubmit={handleSearch} className="flex items-center">
-      <input
-        type="text"
-        placeholder={"Location"}
-        value={location}
-        onChange={handleInputChange}
-        className="rounded-l-md border border-gray-300 px-4 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
-      <input
-        type="text"
-        placeholder={"Address"}
-        value={address}
-        onChange={handleInputChange}
-        className="rounded-l-md border border-gray-300 px-4 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
+    <form
+      onSubmit={handleSearch}
+      className="mx-auto mt-4 flex max-w-md flex-col items-center justify-center "
+    >
+      <div className="mb-2 w-full">
+        <input
+          type="text"
+          placeholder="Location"
+          value={location}
+          onChange={handleInputChange}
+          className="w-full rounded-md border border-gray-400 bg-gray-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      <div className="mb-2 w-full">
+        <input
+          type="text"
+          placeholder="Address"
+          value={address}
+          onChange={handleInputChange}
+          className="w-full rounded-md border border-gray-400 bg-gray-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
       <button
         type="submit"
-        className="rounded-r-md border border-blue-500 bg-blue-500 px-4 py-2 font-semibold text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
+        className="w-full rounded-md bg-blue-500 px-4 py-2 font-semibold text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        Submit
+        Search
       </button>
     </form>
   )
