@@ -8,11 +8,22 @@ const prisma = new PrismaClient()
 const OPEN_WEATHER_MAP_KEY = process.env.OPEN_WEATHER_MAP_KEY as string
 
 const seed = async () => {
-  const mainPageLocations = [
-    { lat: "40.7376", lon: "-73.8789", name: "New York" },
+  const locations = [
+    {
+      lat: "40.6966616",
+      lon: "-74.6377",
+      name: "New York",
+      showOnnMainPage: true,
+    },
+    {
+      lat: "40.7376",
+      lon: "-73.8789",
+      name: "Elmhurst",
+      showOnnMainPage: false,
+    },
   ]
-  const mainPageData = await Promise.all(
-    mainPageLocations.map(async (loc) => {
+  const data = await Promise.all(
+    locations.map(async (loc) => {
       const lat = loc.lat
       const lon = loc.lon
       const response = await fetch(
@@ -22,7 +33,7 @@ const seed = async () => {
     })
   )
 
-  const updateMainPage = mainPageData.map(async (weatherData) => {
+  const updatePage = data.map(async (weatherData) => {
     const lat = weatherData[0]?.lat as string
     const lon = weatherData[0]?.lon as string
     const coord = `${lat},${lon}`
@@ -37,12 +48,12 @@ const seed = async () => {
       create: {
         latLon: coord,
         json: weatherData[1] as Prisma.JsonObject,
-        showOnMainPage: true,
+        showOnMainPage: weatherData[0]?.showOnnMainPage as boolean,
         location: weatherData[0]?.name as string,
       },
     })
   })
-  return Promise.all(updateMainPage)
+  return Promise.all(updatePage)
 }
 
 const updateWeather = async () => {
