@@ -110,7 +110,7 @@ export default async function handler(
 
     updatingWeather.length > 0
       ? res.status(200).json({
-          message: `success}`,
+          message: `success`,
         })
       : res.status(500).json({ message: "Failure, no entries updated" })
   } catch (error) {
