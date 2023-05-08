@@ -1,12 +1,79 @@
 import Image from "next/image"
 import { api } from "~/utils/api"
 import React, { useState, useEffect } from "react"
-import { useUser, useAuth } from "@clerk/nextjs"
+import { useUser } from "@clerk/nextjs"
 
-interface SearchBoxProps {
-  placeholder: string
-  onSearch: (query: string) => void
-  buttonName?: string
+interface FormProps {
+  setWeatherData: React.Dispatch<React.SetStateAction<Weather[]>>
+}
+
+const Form: React.FC<FormProps> = ({ setWeatherData }) => {
+  const [location, setLocation] = useState("")
+  const [address, setAddress] = useState("")
+
+  const queryLocationAndAddress =
+    api.weather.getWeatherForLocation.useMutation()
+
+  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    queryLocationAndAddress.mutate({ location, address })
+
+    setLocation("")
+    setAddress("")
+  }
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, placeholder } = event.target
+    event.preventDefault()
+
+    if (placeholder === "Location") {
+      setLocation(value)
+    } else {
+      setAddress(value)
+    }
+  }
+
+  useEffect(() => {
+    console.log(location, address)
+
+    if (queryLocationAndAddress.isSuccess) {
+      const data = queryLocationAndAddress.data?.weather
+      setWeatherData(data)
+    }
+  }, [queryLocationAndAddress.data])
+
+  return (
+    <form
+      onSubmit={handleSearch}
+      className="mx-auto mt-4 flex max-w-md flex-col items-center justify-center "
+    >
+      <div className="mb-2 w-full">
+        <input
+          type="text"
+          placeholder="Location"
+          value={location}
+          onChange={handleInputChange}
+          className="w-full rounded-md border border-gray-400 bg-gray-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      <div className="mb-2 w-full">
+        <input
+          type="text"
+          placeholder="Address"
+          value={address}
+          onChange={handleInputChange}
+          className="w-full rounded-md border border-gray-400 bg-gray-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      <button
+        type="submit"
+        className="w-full rounded-md bg-blue-500 px-4 py-2 font-semibold text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        Search
+      </button>
+    </form>
+  )
 }
 
 interface Weather {
@@ -20,49 +87,10 @@ interface Weather {
   pressure?: number
   humidity?: number
   wind?: number
-  lon?: number
-  lat?: number
+  lon?: number | string
+  lat?: number | string
   iconImageURL?: string
   updatedAt?: Date
-}
-
-interface WeatherProps {
-  data: Weather[]
-}
-
-const SearchBox: React.FC<SearchBoxProps> = ({
-  placeholder,
-  onSearch,
-  buttonName = "Search",
-}) => {
-  const [query, setQuery] = useState("")
-
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    onSearch(query)
-  }
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(event.target.value)
-  }
-
-  return (
-    <form onSubmit={handleSearch} className="flex items-center">
-      <input
-        type="text"
-        placeholder={placeholder}
-        value={query}
-        onChange={handleInputChange}
-        className="rounded-l-md border border-gray-300 px-4 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
-      <button
-        type="submit"
-        className="rounded-r-md border border-blue-500 bg-blue-500 px-4 py-2 font-semibold text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
-      >
-        {buttonName}
-      </button>
-    </form>
-  )
 }
 
 const WeatherCard: React.FC<Weather> = (data) => {
@@ -118,48 +146,14 @@ const WeatherCard: React.FC<Weather> = (data) => {
   )
 }
 
-const MainPageWeather: React.FC<WeatherProps> = ({ data }) => {
-  return (
-    <>
-      {data?.map((weather) => {
-        return <WeatherCard key={weather.name} {...weather} />
-      })}
-    </>
-  )
-}
-
-const UserPageWeather: React.FC<WeatherProps> = ({ data }) => {
-  const handleSearch = (searchText: string) => {
-    console.log(`Looking up: ${searchText}`)
-  }
-
-  return (
-    <>
-      <div className="m-1 mt-5 flex  items-center justify-center">
-        <SearchBox
-          onSearch={handleSearch}
-          placeholder="email@gmail.com"
-          buttonName="Add Weather To Daily Calendar"
-        />
-      </div>
-      <div className="m-1 mt-2 flex items-center justify-center">
-        <SearchBox onSearch={handleSearch} placeholder="Search for a city" />
-      </div>
-      {data?.map((weather) => {
-        return <WeatherCard key={weather.name} {...weather} />
-      })}
-    </>
-  )
-}
-
 const WeatherPage = () => {
   const { isSignedIn } = useUser()
-  const { userId } = useAuth() as { userId: string }
+  const [weatherData, setWeatherData] = useState<Weather[]>([])
 
-  const userResponse = api.weather.getWeatherForUserPage.useQuery(
-    { userId },
-    { enabled: isSignedIn === true, refetchOnWindowFocus: false }
-  )
+  const userResponse = api.weather.getWeatherForUserPage.useQuery(undefined, {
+    enabled: isSignedIn === true,
+    refetchOnWindowFocus: false,
+  })
 
   const mainResponse = api.weather.getWeatherForMainPage.useQuery(undefined, {
     enabled: isSignedIn === false,
@@ -168,7 +162,7 @@ const WeatherPage = () => {
 
   const response = isSignedIn ? userResponse : mainResponse
 
-  const weatherData = response?.data?.weather
+  const weather = response?.data?.weather
 
   const users = api.user.addUser.useMutation()
 
@@ -181,15 +175,26 @@ const WeatherPage = () => {
     addUserIfDNE()
   }, [isSignedIn])
 
+  useEffect(() => {
+    if (weather) {
+      setWeatherData(weather)
+    }
+  }, [weather])
+
   if (isSignedIn == undefined) {
     return (
       <p className="flex h-screen items-center justify-center">Loading...</p>
     )
   } else {
-    return isSignedIn ? (
-      <UserPageWeather data={weatherData || []} />
-    ) : (
-      <MainPageWeather data={weatherData || []} />
+    return (
+      <div>
+        {isSignedIn && <Form setWeatherData={setWeatherData} />}
+        {weatherData?.map((w) => {
+          return (
+            <WeatherCard key={`${w.lat as string},${w.lon as string}`} {...w} />
+          )
+        })}
+      </div>
     )
   }
 }
