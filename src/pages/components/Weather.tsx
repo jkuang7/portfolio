@@ -3,18 +3,22 @@ import { api } from "~/utils/api"
 import React, { useState, useEffect } from "react"
 import { useUser, useAuth } from "@clerk/nextjs"
 
-interface FormProps {
-  placeholder: string
-  onSearch: (query: string) => void
-  buttonName?: string
-}
+interface FormProps {}
 
 const Form: React.FC<FormProps> = () => {
   const [location, setLocation] = useState("")
   const [address, setAddress] = useState("")
 
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+  const queryLocationAndAddress =
+    api.weather.getWeatherForLocation.useMutation()
+
+  const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+
+    queryLocationAndAddress.mutate({ location, address })
+
+    // setLocation("")
+    // setAddress("")
   }
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,10 +143,10 @@ const WeatherPage = () => {
   const { isSignedIn } = useUser()
   const { userId } = useAuth() as { userId: string }
 
-  const userResponse = api.weather.getWeatherForUserPage.useQuery(
-    { userId },
-    { enabled: isSignedIn === true, refetchOnWindowFocus: false }
-  )
+  const userResponse = api.weather.getWeatherForUserPage.useQuery(undefined, {
+    enabled: isSignedIn === true,
+    refetchOnWindowFocus: false,
+  })
 
   const mainResponse = api.weather.getWeatherForMainPage.useQuery(undefined, {
     enabled: isSignedIn === false,
@@ -173,7 +177,9 @@ const WeatherPage = () => {
       <div>
         {isSignedIn && <Form />}
         {weatherData?.map((weather) => {
-          return <WeatherCard key={weather.name} {...weather} />
+          return (
+            <WeatherCard key={`${weather.lat},${weather.lon}`} {...weather} />
+          )
         })}
       </div>
     )
