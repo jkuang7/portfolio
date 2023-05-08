@@ -49,7 +49,6 @@ const seed = async () => {
         latLon: coord,
         json: data[1] as Prisma.JsonObject,
         showOnHomePage: data[0]?.showOnHomePage as boolean,
-        location: data[0]?.name as string,
       },
     })
   })
