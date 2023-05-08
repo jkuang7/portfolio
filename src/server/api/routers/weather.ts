@@ -2,7 +2,7 @@ import { z } from "zod"
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc"
 
-import type { Weather, Prisma } from "@prisma/client"
+import type { Weather, Prisma, PrismaClient } from "@prisma/client"
 
 import axios from "axios"
 
@@ -186,6 +186,32 @@ const weatherDTO = (weather: Weather) => {
   return weatherData
 }
 
+const getWeatherFromCurrentUser = async (ctx: {
+  prisma: PrismaClient<
+    Prisma.PrismaClientOptions,
+    never,
+    Prisma.RejectOnNotFound | Prisma.RejectPerOperation | undefined
+  >
+  userId: string | null
+}) => {
+  const userWeathers = await ctx.prisma.userWeather.findMany({
+    where: {
+      userId: ctx.userId as string,
+    },
+    take: 100,
+  })
+
+  const weathers = await ctx.prisma.weather.findMany({
+    where: {
+      latLon: {
+        in: userWeathers.map((uw) => uw.latLon),
+      },
+    },
+  })
+
+  return weathers.map((data) => weatherDTO(data))
+}
+
 //routers
 export const weatherRouter = createTRPCRouter({
   getWeatherForMainPage: publicProcedure.query(async ({ ctx }) => {
@@ -215,23 +241,9 @@ export const weatherRouter = createTRPCRouter({
     if (!success) {
       throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
     }
-    const userWeathers = await ctx.prisma.userWeather.findMany({
-      where: {
-        userId: ctx.userId as string,
-      },
-      take: 100,
-    })
-
-    const weathers = await ctx.prisma.weather.findMany({
-      where: {
-        latLon: {
-          in: userWeathers.map((uw) => uw.latLon),
-        },
-      },
-    })
 
     return {
-      weather: weathers.map((data) => weatherDTO(data)),
+      weather: await getWeatherFromCurrentUser(ctx),
       source: "database",
     }
   }),
@@ -307,25 +319,6 @@ export const weatherRouter = createTRPCRouter({
         }
       }
 
-      const getWeatherFromCurrentUser = async () => {
-        const userWeathers = await ctx.prisma.userWeather.findMany({
-          where: {
-            userId: ctx.userId as string,
-          },
-          take: 100,
-        })
-
-        const weathers = await ctx.prisma.weather.findMany({
-          where: {
-            latLon: {
-              in: userWeathers.map((uw) => uw.latLon),
-            },
-          },
-        })
-
-        return weathers.map((data) => weatherDTO(data))
-      }
-
       const rateLimit = async () => {
         const res1 = await RATELIMIT.limit(
           `getWeatherForLocation:${ctx.userId as string}`
@@ -365,7 +358,7 @@ export const weatherRouter = createTRPCRouter({
           "," +
           openWeatherData.coord.lon.toString()
         await mapWeatherToUserWeather(openWeatherData, coord)
-        return await getWeatherFromCurrentUser()
+        return await getWeatherFromCurrentUser(ctx)
       })
 
       return weatherData
