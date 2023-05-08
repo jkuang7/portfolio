@@ -113,7 +113,13 @@ const REDIS = Redis.fromEnv()
 //ratelimit 50 requests per 60 minutes
 const RATELIMIT = new Ratelimit({
   redis: REDIS,
-  limiter: Ratelimit.fixedWindow(50, "60m"),
+  limiter: Ratelimit.fixedWindow(25, "60m"),
+  analytics: true,
+})
+
+const RATELIMIT2 = new Ratelimit({
+  redis: REDIS,
+  limiter: Ratelimit.fixedWindow(1, "1m"),
   analytics: true,
 })
 
@@ -263,13 +269,31 @@ export const weatherRouter = createTRPCRouter({
       }
 
       const mapWeatherToUserWeather = async (data: unknown, coord: string) => {
+        const updateUserWeather = () => {
+          return ctx.prisma.userWeather.upsert({
+            where: {
+              userId_latLon: {
+                userId: ctx.userId as string,
+                latLon: coord,
+              },
+            },
+            create: {
+              userId: ctx.userId as string,
+              latLon: coord,
+            },
+            update: {},
+          })
+        }
+
         const weather = await ctx.prisma.weather.findUnique({
           where: {
             latLon: coord,
           },
         })
 
-        if (!weather?.json) {
+        if (weather?.json) {
+          await updateUserWeather()
+        } else {
           const createNewWeather = await ctx.prisma.weather.create({
             data: {
               latLon: coord,
@@ -279,21 +303,8 @@ export const weatherRouter = createTRPCRouter({
             },
           })
           console.log("Creating new weather", createNewWeather)
+          await updateUserWeather()
         }
-
-        await ctx.prisma.userWeather.upsert({
-          where: {
-            userId_latLon: {
-              userId: ctx.userId as string,
-              latLon: coord,
-            },
-          },
-          create: {
-            userId: ctx.userId as string,
-            latLon: coord,
-          },
-          update: {},
-        })
       }
 
       const getWeatherFromCurrentUser = async () => {
@@ -315,18 +326,20 @@ export const weatherRouter = createTRPCRouter({
         return weathers.map((data) => weatherDTO(data))
       }
 
-      const cacheKey = `getWeatherFromCurrentUser:${ctx.userId as string}${
-        input.location
-      }${input.address}`
+      const cacheKey = `getWeatherForLocation:${ctx.userId as string},${
+        input.address
+      }`
 
       const weatherData = await cacheFetch(cacheKey, async () => {
-        const { success } = await RATELIMIT.limit(ctx.userId as string)
+        const { success } = await RATELIMIT.limit(
+          `getWeatherForLocation:${ctx.userId as string}`
+        )
 
         if (!success) {
           throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
         }
-
         const { lat, lng: lon } = await getLatLonFromGoogleAPI(input.address)
+
         const openWeatherData = await getOpenWeatherMapData(lat, lon)
         const coord =
           openWeatherData.coord.lat.toString() +
@@ -335,8 +348,6 @@ export const weatherRouter = createTRPCRouter({
         await mapWeatherToUserWeather(openWeatherData, coord)
         return await getWeatherFromCurrentUser()
       })
-
-      console.log(weatherData)
 
       return weatherData
     }),
