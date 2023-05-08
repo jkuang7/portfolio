@@ -1,18 +1,20 @@
 import Image from "next/image"
 import { api } from "~/utils/api"
 import React, { useState, useEffect } from "react"
-import { useUser, useAuth } from "@clerk/nextjs"
+import { useUser } from "@clerk/nextjs"
 
-interface FormProps {}
+interface FormProps {
+  setWeatherData: React.Dispatch<React.SetStateAction<Weather[]>>
+}
 
-const Form: React.FC<FormProps> = () => {
+const Form: React.FC<FormProps> = ({ setWeatherData }) => {
   const [location, setLocation] = useState("")
   const [address, setAddress] = useState("")
 
   const queryLocationAndAddress =
     api.weather.getWeatherForLocation.useMutation()
 
-  const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     queryLocationAndAddress.mutate({ location, address })
@@ -34,7 +36,12 @@ const Form: React.FC<FormProps> = () => {
 
   useEffect(() => {
     console.log(location, address)
-  }, [location, address])
+
+    if (queryLocationAndAddress.isSuccess) {
+      const data = queryLocationAndAddress.data?.weather
+      setWeatherData(data)
+    }
+  }, [queryLocationAndAddress.data])
 
   return (
     <form
@@ -80,8 +87,8 @@ interface Weather {
   pressure?: number
   humidity?: number
   wind?: number
-  lon?: number
-  lat?: number
+  lon?: number | string
+  lat?: number | string
   iconImageURL?: string
   updatedAt?: Date
 }
@@ -141,7 +148,7 @@ const WeatherCard: React.FC<Weather> = (data) => {
 
 const WeatherPage = () => {
   const { isSignedIn } = useUser()
-  const { userId } = useAuth() as { userId: string }
+  const [weatherData, setWeatherData] = useState<Weather[]>([])
 
   const userResponse = api.weather.getWeatherForUserPage.useQuery(undefined, {
     enabled: isSignedIn === true,
@@ -155,7 +162,7 @@ const WeatherPage = () => {
 
   const response = isSignedIn ? userResponse : mainResponse
 
-  const weatherData = response?.data?.weather
+  const weather = response?.data?.weather
 
   const users = api.user.addUser.useMutation()
 
@@ -168,6 +175,12 @@ const WeatherPage = () => {
     addUserIfDNE()
   }, [isSignedIn])
 
+  useEffect(() => {
+    if (weather) {
+      setWeatherData(weather)
+    }
+  }, [weather])
+
   if (isSignedIn == undefined) {
     return (
       <p className="flex h-screen items-center justify-center">Loading...</p>
@@ -175,10 +188,10 @@ const WeatherPage = () => {
   } else {
     return (
       <div>
-        {isSignedIn && <Form />}
-        {weatherData?.map((weather) => {
+        {isSignedIn && <Form setWeatherData={setWeatherData} />}
+        {weatherData?.map((w) => {
           return (
-            <WeatherCard key={`${weather.lat},${weather.lon}`} {...weather} />
+            <WeatherCard key={`${w.lat as string},${w.lon as string}`} {...w} />
           )
         })}
       </div>

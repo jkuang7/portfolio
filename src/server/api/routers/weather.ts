@@ -204,33 +204,30 @@ export const weatherRouter = createTRPCRouter({
   }),
 
   getWeatherForUserPage: publicProcedure.query(async ({ ctx }) => {
-    const cacheKey = `userPageWeather:${ctx.userId as string}`
+    const { success } = await RATELIMIT.limit(ctx.userId as string)
 
-    const weatherData = await cacheFetch(cacheKey, async () => {
-      const { success } = await RATELIMIT.limit(ctx.userId as string)
-
-      if (!success) {
-        throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
-      }
-      const userWeathers = await ctx.prisma.userWeather.findMany({
-        where: {
-          userId: ctx.userId as string,
-        },
-        take: 100,
-      })
-
-      const weathers = await ctx.prisma.weather.findMany({
-        where: {
-          latLon: {
-            in: userWeathers.map((uw) => uw.latLon),
-          },
-        },
-      })
-
-      return weathers.map((data) => weatherDTO(data))
+    if (!success) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
+    }
+    const userWeathers = await ctx.prisma.userWeather.findMany({
+      where: {
+        userId: ctx.userId as string,
+      },
+      take: 100,
     })
 
-    return weatherData
+    const weathers = await ctx.prisma.weather.findMany({
+      where: {
+        latLon: {
+          in: userWeathers.map((uw) => uw.latLon),
+        },
+      },
+    })
+
+    return {
+      weather: weathers.map((data) => weatherDTO(data)),
+      source: "database",
+    }
   }),
 
   getWeatherForLocation: publicProcedure
