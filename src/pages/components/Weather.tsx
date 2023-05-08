@@ -95,10 +95,15 @@ interface Weather {
 
 interface WeatherCardProps {
   data: Weather
+  isSignedIn: boolean
   setWeatherData: React.Dispatch<React.SetStateAction<Weather[]>>
 }
 
-const WeatherCard: React.FC<WeatherCardProps> = ({ data, setWeatherData }) => {
+const WeatherCard: React.FC<WeatherCardProps> = ({
+  data,
+  isSignedIn,
+  setWeatherData,
+}) => {
   const deleteCard = api.weather.deleteLocation.useMutation()
 
   useEffect(() => {
@@ -130,12 +135,15 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ data, setWeatherData }) => {
 
   return (
     <div className="border-black-500 relative mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
-      <button
-        onClick={handleDelete}
-        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-red-500 text-white"
-      >
-        ×
-      </button>
+      {isSignedIn ? (
+        <button
+          onClick={handleDelete}
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-red-500 text-white"
+        >
+          ×
+        </button>
+      ) : null}
+
       <div>
         <p>{data?.location}</p>
         <p>Lat: {data?.lat}</p>
@@ -217,6 +225,7 @@ const WeatherPage = () => {
           return (
             <WeatherCard
               key={`${w.lat as string},${w.lon as string}`}
+              isSignedIn={isSignedIn}
               data={{ ...w }}
               setWeatherData={setWeatherData}
             />
