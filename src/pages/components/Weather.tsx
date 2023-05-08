@@ -19,8 +19,8 @@ const Form: React.FC<FormProps> = ({ setWeatherData }) => {
 
     queryLocationAndAddress.mutate({ location, address })
 
-    // setLocation("")
-    // setAddress("")
+    setLocation("")
+    setAddress("")
   }
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {

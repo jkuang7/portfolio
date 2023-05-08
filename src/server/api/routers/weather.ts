@@ -119,7 +119,7 @@ const RATELIMIT = new Ratelimit({
 
 const RATELIMIT2 = new Ratelimit({
   redis: REDIS,
-  limiter: Ratelimit.fixedWindow(1, "1m"),
+  limiter: Ratelimit.fixedWindow(1, "30s"),
   analytics: true,
 })
 
@@ -326,18 +326,37 @@ export const weatherRouter = createTRPCRouter({
         return weathers.map((data) => weatherDTO(data))
       }
 
+      const rateLimit = async () => {
+        const res1 = await RATELIMIT.limit(
+          `getWeatherForLocation:${ctx.userId as string}`
+        )
+
+        const res2 = await RATELIMIT2.limit(
+          `getWeatherForLocation:${ctx.userId as string}:${input.location}`
+        )
+
+        if (!res1.success || !res2.success) {
+          throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
+        }
+
+        const duplicateLocation = await ctx.prisma.weather.findMany({
+          where: {
+            location: input.location,
+          },
+        })
+
+        if (duplicateLocation.length > 0) {
+          throw new TRPCError({ code: "CONFLICT" })
+        }
+      }
+
+      await rateLimit()
+
       const cacheKey = `getWeatherForLocation:${ctx.userId as string},${
         input.address
       }`
 
       const weatherData = await cacheFetch(cacheKey, async () => {
-        const { success } = await RATELIMIT.limit(
-          `getWeatherForLocation:${ctx.userId as string}`
-        )
-
-        if (!success) {
-          throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
-        }
         const { lat, lng: lon } = await getLatLonFromGoogleAPI(input.address)
 
         const openWeatherData = await getOpenWeatherMapData(lat, lon)
