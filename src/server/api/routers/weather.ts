@@ -148,8 +148,8 @@ async function cacheFetch<T>(
   }
 }
 
-const weatherDTO = (weather: Weather) => {
-  const data = weather.json?.valueOf() as WeatherInput
+const weatherDTO = (obj: { weather: Weather; location: string }) => {
+  const data = obj.weather.json?.valueOf() as WeatherInput
 
   const convertKelvinToFahrenheit = (kelvin: number | undefined) => {
     if (kelvin === undefined) {
@@ -161,7 +161,7 @@ const weatherDTO = (weather: Weather) => {
   //clean up data
   const weatherData = {
     name: data?.name,
-    location: weather.location,
+    location: obj.location,
     description: data?.weather[0]?.description,
     temp: convertKelvinToFahrenheit(data?.main?.temp),
     feels_like: convertKelvinToFahrenheit(data?.main?.feels_like),
@@ -173,7 +173,7 @@ const weatherDTO = (weather: Weather) => {
     lon: data?.coord?.lon,
     lat: data?.coord?.lat,
     iconImageURL: "",
-    updatedAt: weather.updatedAt,
+    updatedAt: obj.weather.updatedAt,
   }
 
   //update iconImageURL
@@ -186,30 +186,54 @@ const weatherDTO = (weather: Weather) => {
   return weatherData
 }
 
-const getWeatherFromCurrentUser = async (ctx: {
-  prisma: PrismaClient<
-    Prisma.PrismaClientOptions,
-    never,
-    Prisma.RejectOnNotFound | Prisma.RejectPerOperation | undefined
-  >
-  userId: string | null
-}) => {
-  const userWeathers = await ctx.prisma.userWeather.findMany({
-    where: {
-      userId: ctx.userId as string,
-    },
-    take: 100,
-  })
-
-  const weathers = await ctx.prisma.weather.findMany({
-    where: {
-      latLon: {
-        in: userWeathers.map((uw) => uw.latLon),
+const getWeather = async (
+  ctx: {
+    prisma: PrismaClient<
+      Prisma.PrismaClientOptions,
+      never,
+      Prisma.RejectOnNotFound | Prisma.RejectPerOperation | undefined
+    >
+    userId: string | null
+  },
+  showOnHomePage = false
+) => {
+  let data = []
+  if (showOnHomePage) {
+    data = await ctx.prisma.userWeather.findMany({
+      where: {
+        userId: "admin",
+        showOnHomePage: {
+          equals: true,
+        },
       },
-    },
-  })
+    })
+  } else {
+    data = await ctx.prisma.userWeather.findMany({
+      where: {
+        userId: ctx.userId as string,
+        showOnHomePage: {
+          equals: false,
+        },
+      },
+      take: 100,
+    })
+  }
 
-  return weathers.map((data) => weatherDTO(data))
+  const weathers = await Promise.all(
+    data.map(async (data) => {
+      const weather = await ctx.prisma.weather.findUnique({
+        where: {
+          latLon: data.latLon,
+        },
+      })
+      return {
+        weather: weather as Weather,
+        location: data.location as string,
+      }
+    })
+  )
+
+  return Promise.all(weathers.map((data) => weatherDTO(data)))
 }
 
 //routers
@@ -221,17 +245,8 @@ export const weatherRouter = createTRPCRouter({
         throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
       }
 
-      const data = await ctx.prisma.weather.findMany({
-        take: 100,
-        where: {
-          showOnHomePage: true,
-        },
-        orderBy: [{ location: "asc" }],
-      })
-
-      return data.map((data) => weatherDTO(data))
+      return getWeather(ctx, true)
     })
-
     return weatherData
   }),
 
@@ -243,7 +258,7 @@ export const weatherRouter = createTRPCRouter({
     }
 
     return {
-      weather: await getWeatherFromCurrentUser(ctx),
+      weather: await getWeather(ctx),
       source: "database",
     }
   }),
@@ -292,6 +307,8 @@ export const weatherRouter = createTRPCRouter({
             create: {
               userId: ctx.userId as string,
               latLon: coord,
+              location: input.location,
+              showOnHomePage: false,
             },
             update: {},
           })
@@ -304,14 +321,13 @@ export const weatherRouter = createTRPCRouter({
         })
 
         if (weather?.json) {
+          console.log("Weather.json already exists", weather.json, coord)
           await updateUserWeather()
         } else {
           const createNewWeather = await ctx.prisma.weather.create({
             data: {
               latLon: coord,
               json: data as Prisma.JsonObject,
-              showOnHomePage: false,
-              location: input.location,
             },
           })
           console.log("Creating new weather", createNewWeather)
@@ -332,13 +348,13 @@ export const weatherRouter = createTRPCRouter({
           throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
         }
 
-        const duplicateLocation = await ctx.prisma.weather.findMany({
+        const duplicateLocation = await ctx.prisma.userWeather.findFirst({
           where: {
             location: input.location,
           },
         })
 
-        if (duplicateLocation.length > 0) {
+        if (duplicateLocation) {
           throw new TRPCError({ code: "CONFLICT" })
         }
       }
@@ -347,7 +363,7 @@ export const weatherRouter = createTRPCRouter({
 
       const cacheKey = `getWeatherForLocation:${ctx.userId as string},${
         input.address
-      }`
+      },${input.location}}`
 
       const weatherData = await cacheFetch(cacheKey, async () => {
         const { lat, lng: lon } = await getLatLonFromGoogleAPI(input.address)
@@ -358,9 +374,49 @@ export const weatherRouter = createTRPCRouter({
           "," +
           openWeatherData.coord.lon.toString()
         await mapWeatherToUserWeather(openWeatherData, coord)
-        return await getWeatherFromCurrentUser(ctx)
+        return await getWeather(ctx)
       })
 
       return weatherData
     }),
+  deleteLocation: publicProcedure
+    .input(z.object({ latLon: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { success } = await RATELIMIT.limit(ctx.userId as string)
+
+      if (!success) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS" })
+      }
+
+      await ctx.prisma.userWeather.delete({
+        where: {
+          userId_latLon: {
+            userId: ctx.userId as string,
+            latLon: input.latLon,
+          },
+        },
+      })
+
+      //check if another userWeather has the same latLon -> if not, delete weather
+      const weather = await ctx.prisma.userWeather.findMany({
+        where: {
+          latLon: input.latLon,
+        },
+      })
+
+      if (weather.length === 0) {
+        await ctx.prisma.weather.delete({
+          where: {
+            latLon: input.latLon,
+          },
+        })
+      }
+
+      return {
+        weather: await getWeather(ctx),
+        source: "database",
+      }
+    }),
 })
+
+export type WeatherRouter = typeof weatherRouter
