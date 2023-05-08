@@ -12,17 +12,17 @@ const seed = async () => {
     {
       lat: "40.70",
       lon: "-74.6377",
-      name: "New York",
+      location: "New York",
       showOnHomePage: true,
     },
     {
       lat: "40.7376",
       lon: "-73.8789",
-      name: "Elmhurst",
+      location: "Elmhurst",
       showOnHomePage: false,
     },
   ]
-  const getWeatherDataAPI = await Promise.all(
+  const getWeatherDataFromAPI = await Promise.all(
     locations.map(async (loc) => {
       const lat = loc.lat
       const lon = loc.lon
@@ -33,12 +33,26 @@ const seed = async () => {
     })
   )
 
-  const addWeatherToDb = getWeatherDataAPI.map(async (data) => {
+  const USER_ADMIN_ID = process.env.USER_ADMIN_ID as string
+
+  await prisma.user.create({
+    data: {
+      id: "admin",
+    },
+  })
+
+  await prisma.user.create({
+    data: {
+      id: USER_ADMIN_ID,
+    },
+  })
+
+  const addWeatherToDb = getWeatherDataFromAPI.map(async (data) => {
     const lat = data[0]?.lat as string
     const lon = data[0]?.lon as string
     const coord = `${lat},${lon}`
 
-    await prisma.weather.upsert({
+    return await prisma.weather.upsert({
       where: {
         latLon: coord,
       },
@@ -48,11 +62,30 @@ const seed = async () => {
       create: {
         latLon: coord,
         json: data[1] as Prisma.JsonObject,
-        showOnHomePage: data[0]?.showOnHomePage as boolean,
       },
     })
   })
-  return Promise.all(addWeatherToDb)
+  const weathers = Promise.all(addWeatherToDb)
+
+  await prisma.userWeather.create({
+    data: {
+      userId: "admin",
+      latLon: `${locations[0]?.lat as string},${locations[0]?.lon as string}`,
+      showOnHomePage: locations[0]?.showOnHomePage as boolean,
+      location: locations[0]?.location as string,
+    },
+  })
+
+  await prisma.userWeather.create({
+    data: {
+      userId: USER_ADMIN_ID,
+      latLon: `${locations[1]?.lat as string},${locations[1]?.lon as string}`,
+      showOnHomePage: locations[1]?.showOnHomePage as boolean,
+      location: locations[1]?.location as string,
+    },
+  })
+
+  return weathers
 }
 
 const updateWeather = async () => {
