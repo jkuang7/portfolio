@@ -111,7 +111,10 @@ const WeatherCard: React.FC<Weather> = (data) => {
     }) + " EST"
 
   return (
-    <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
+    <div className="border-black-500 relative mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
+      <button className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-red-500 text-white">
+        ×
+      </button>
       <div>
         <p>{data?.location}</p>
         <p>Lat: {data?.lat}</p>
