@@ -93,7 +93,30 @@ interface Weather {
   updatedAt?: Date
 }
 
-const WeatherCard: React.FC<Weather> = (data) => {
+interface WeatherCardProps {
+  data: Weather
+  isSignedIn: boolean
+  setWeatherData: React.Dispatch<React.SetStateAction<Weather[]>>
+}
+
+const WeatherCard: React.FC<WeatherCardProps> = ({
+  data,
+  isSignedIn,
+  setWeatherData,
+}) => {
+  const deleteCard = api.weather.deleteLocation.useMutation()
+
+  useEffect(() => {
+    if (deleteCard.isSuccess) {
+      const data = deleteCard.data?.weather
+      setWeatherData(data)
+    }
+  }, [deleteCard.data])
+
+  const handleDelete = () => {
+    deleteCard.mutate({ latLon: `${data.lat as string},${data.lon as string}` })
+  }
+
   const utcDate = new Date(data?.updatedAt || "")
   const estDate = new Date(
     utcDate.toLocaleString("en-US", { timeZone: "America/New_York" })
@@ -111,7 +134,16 @@ const WeatherCard: React.FC<Weather> = (data) => {
     }) + " EST"
 
   return (
-    <div className="border-black-500 mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
+    <div className="border-black-500 relative mx-auto mt-4 grid max-w-md grid-cols-2 gap-5 overflow-hidden rounded-3xl border border-slate-400 bg-white p-5 shadow-lg">
+      {isSignedIn ? (
+        <button
+          onClick={handleDelete}
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-red-500 text-white"
+        >
+          ×
+        </button>
+      ) : null}
+
       <div>
         <p>{data?.location}</p>
         <p>Lat: {data?.lat}</p>
@@ -191,7 +223,12 @@ const WeatherPage = () => {
         {isSignedIn && <Form setWeatherData={setWeatherData} />}
         {weatherData?.map((w) => {
           return (
-            <WeatherCard key={`${w.lat as string},${w.lon as string}`} {...w} />
+            <WeatherCard
+              key={`${w.lat as string},${w.lon as string}`}
+              isSignedIn={isSignedIn}
+              data={{ ...w }}
+              setWeatherData={setWeatherData}
+            />
           )
         })}
       </div>

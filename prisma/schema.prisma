@@ -11,8 +11,6 @@ datasource db {
 model Weather {
   latLon        String   @db.VarChar(255) @id
   json           Json
-  showOnHomePage Boolean
-  location       String   @db.VarChar(255)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   userWeathers   UserWeather[]
@@ -31,6 +29,8 @@ model UserWeather {
   weather   Weather  @relation(fields: [latLon], references: [latLon])
   userId    String
   latLon    String
+  location String
+  showOnHomePage Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

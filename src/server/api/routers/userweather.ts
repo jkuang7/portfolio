@@ -34,8 +34,6 @@ export const userWeatherRouter = createTRPCRouter({
       const weather = await ctx.prisma.weather.create({
         data: {
           latLon: input.latLon,
-          location: input.location,
-          showOnHomePage: false,
           json: jsonResponse as Prisma.JsonObject,
         },
       })
@@ -45,6 +43,7 @@ export const userWeatherRouter = createTRPCRouter({
         data: {
           userId: ctx.userId as string,
           latLon: weather.latLon,
+          location: input.location,
         },
       })
 
