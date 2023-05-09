@@ -1,11 +1,10 @@
-import { type NextPage } from "next";
-import Head from "next/head";
-import Link from "next/link";
-import WeatherPage from "~/pages/components/Weather";
-import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
+import { type NextPage } from "next"
+import Head from "next/head"
+import WeatherPage from "~/pages/components/Weather"
+import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs"
 
 const UserIsSignedIn = () => {
-  const user = useUser();
+  const user = useUser()
   return (
     <div className="flex justify-end">
       <div className="m-1 pr-4">
@@ -25,8 +24,8 @@ const UserIsSignedIn = () => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
 const Home: NextPage = () => {
   return (
@@ -41,7 +40,7 @@ const Home: NextPage = () => {
         <WeatherPage />
       </main>
     </>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home
