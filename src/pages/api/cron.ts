@@ -16,6 +16,18 @@ const seed = async () => {
       showOnHomePage: true,
     },
     {
+      lat: "36.2048",
+      lon: "138.2529",
+      location: "Japan",
+      showOnHomePage: true,
+    },
+    {
+      lat: "36.7783",
+      lon: "-119.4179",
+      location: "California",
+      showOnHomePage: true,
+    },
+    {
       lat: "40.7376",
       lon: "-73.8789",
       location: "Elmhurst",
@@ -65,24 +77,28 @@ const seed = async () => {
       },
     })
   })
-  const weathers = Promise.all(addWeatherToDb)
+  const weathers = await Promise.all(addWeatherToDb)
 
-  await prisma.userWeather.create({
-    data: {
-      userId: "admin",
-      latLon: `${locations[0]?.lat as string},${locations[0]?.lon as string}`,
-      showOnHomePage: locations[0]?.showOnHomePage as boolean,
-      location: locations[0]?.location as string,
-    },
-  })
-
-  await prisma.userWeather.create({
-    data: {
-      userId: USER_ADMIN_ID,
-      latLon: `${locations[1]?.lat as string},${locations[1]?.lon as string}`,
-      showOnHomePage: locations[1]?.showOnHomePage as boolean,
-      location: locations[1]?.location as string,
-    },
+  locations.map(async (loc) => {
+    if (loc.showOnHomePage) {
+      await prisma.userWeather.create({
+        data: {
+          userId: "admin",
+          latLon: `${loc.lat as string},${loc.lon as string}`,
+          showOnHomePage: loc.showOnHomePage as boolean,
+          location: loc.location as string,
+        },
+      })
+    } else {
+      await prisma.userWeather.create({
+        data: {
+          userId: USER_ADMIN_ID,
+          latLon: `${loc.lat as string},${loc.lon as string}`,
+          showOnHomePage: loc.showOnHomePage as boolean,
+          location: loc.location as string,
+        },
+      })
+    }
   })
 
   return weathers
