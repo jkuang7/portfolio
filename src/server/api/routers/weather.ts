@@ -2,7 +2,7 @@ import { z } from "zod"
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc"
 
-import type { Weather, Prisma, PrismaClient } from "@prisma/client"
+import type { Weather, Prisma, PrismaClient, UserWeather } from "@prisma/client"
 
 import axios from "axios"
 
@@ -197,7 +197,7 @@ const getWeather = async (
   },
   showOnHomePage = false
 ) => {
-  let data = []
+  let data: UserWeather[]
   if (showOnHomePage) {
     data = await ctx.prisma.userWeather.findMany({
       where: {
@@ -221,7 +221,7 @@ const getWeather = async (
 
   const weathers = await Promise.all(
     data.map(async (data) => {
-      const weather = await ctx.prisma.weather.findUnique({
+      const weather = await ctx.prisma.weather.findFirst({
         where: {
           latLon: data.latLon,
         },
