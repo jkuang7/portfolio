@@ -274,18 +274,13 @@ export const weatherRouter = createTRPCRouter({
           key: GOOGLE_CLOUD_API_KEY,
         }
 
-        const { data } = (await axios.get<GeocodeResult>(
-          "https://maps.googleapis.com/maps/api/geocode/json",
-          { params }
-        )) as { data: GeocodeResult }
-
         const response = await axios.get<GeocodeResult>(
           "https://maps.googleapis.com/maps/api/geocode/json",
           { params }
         )
 
         if (!response?.data?.results[0]?.geometry.location) {
-          throw new Error("Unexpected structure in response data")
+          throw new TRPCError({ code: "BAD_REQUEST" })
         }
 
         const location = response.data.results[0].geometry.location
