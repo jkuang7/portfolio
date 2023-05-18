@@ -351,6 +351,7 @@ export const weatherRouter = createTRPCRouter({
         const duplicateLocation = await ctx.prisma.userWeather.findFirst({
           where: {
             location: input.location,
+            userId: { not: "admin" },
           },
         })
 
